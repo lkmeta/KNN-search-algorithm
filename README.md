@@ -1,2 +1,5 @@
 # KNN-search-algorithm
-Parallel &amp; Distributed Computer Systems Exercise 2
+# **Παράλληλα και Διανεμημένα Συστήματα**  
+## **2η Άσκηση**
+## Τσουμπλέκας Γεώργιος <br /> | ΑΕΜ :  | Email: 
+## Μέτα Λουίς-Κοσμάς <br /> | AEM : 9390 | Email: louismeta@ece.auth.gr  
