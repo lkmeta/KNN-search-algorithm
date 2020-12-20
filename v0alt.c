@@ -199,7 +199,10 @@ void checkElems(double* A, int n, int m, int k, double kElem, int pointNum, int*
 
     for(int i=0;i<n && elemCount<k;++i){ //no need to keep checking the elements if we have already found the k smallest ones
         if(A[i*m+pointNum]-kElem<0.001f){
-            if(A[i*m+pointNum]<0.001f) continue;
+            if(A[i*m+pointNum]<0.001f){
+                if(i*m+pointNum==n*m-1)break;
+                else continue;
+            }
             nidx[pointNum*k+elemCount] = i; 
             ndist[pointNum*k+elemCount] = A[i*m+pointNum];
             elemCount++;
@@ -210,7 +213,7 @@ void checkElems(double* A, int n, int m, int k, double kElem, int pointNum, int*
 /*
 Function that finds the knn of a specific point 'pointNum' of Y
 */
-void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndist){
+void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndist, int flag){
 
     //we create another subarray because if we apply quickselect in the original the elements might change positions
     double* mPointDistanceMatrix = (double*)malloc(n*sizeof(double));
@@ -228,9 +231,15 @@ void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndi
     printf("mPointDistanceMatrix=\n");
     printMatrix(mPointDistanceMatrix,n);
 
-    //O(n)
-    double kElem = quickSelect(mPointDistanceMatrix,0,n-1,k-1);
+    double kElem;
 
+    //O(n)
+    if(flag==1){
+        kElem = quickSelect(mPointDistanceMatrix,0,n-1,k);
+    }
+    else{
+        kElem = quickSelect(mPointDistanceMatrix,0,n-1,k-1);
+    }
     printf("kElem=%lf\n", kElem);
 
     free(mPointDistanceMatrix);
@@ -242,7 +251,12 @@ void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndi
 
 //function that implements the knn algorithm for a given query set Y and corpus set X
 knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
-   
+    
+    int YisX;
+
+    if(Y==X) YisX = 1;
+    else YisX=0;
+
     double *D = distanceMatrix(X,Y,n,m,d);
 
     int* nidx = (int *)malloc(m * k * sizeof(int));
@@ -262,7 +276,7 @@ knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
     //for each point of the query set Y, find its knn
     for(int i=0;i<m;++i){
         printf("\nm=%d\n", i);
-        kSelect(D,i,n,m,k,nidx,ndist);
+        kSelect(D,i,n,m,k,nidx,ndist,YisX);
     }
 
     free(D);
@@ -279,17 +293,18 @@ knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
 }
 
 
-
+/*
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
     int n = 4, m = 3, d = 2, k = 2;
+
     srand(time(NULL));
 
     int threadNum=atoi(argv[1]);    //number of threads
     printf("\nYou have chosen %d threads \n",threadNum);
 
-    /* Allocate memory for X and Y lists*/
+    // Allocate memory for X and Y lists
     double *X = (double *)malloc(n * d * sizeof(double));
     double *Y = (double *)malloc(m * d * sizeof(double));
 
@@ -324,7 +339,7 @@ int main(int argc, char* argv[])
     }
     printf("\n");
 
-    /* Deallocate used memory */
+    // Deallocate used memory 
     free(X);
     free(Y);
 
@@ -333,3 +348,4 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+*/
