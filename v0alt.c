@@ -72,7 +72,7 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
         sumX[i]=0;
         for (int j = 0; j < d; j++)
         {
-            sumX[i] += pow(X[i + j * n], 2);
+            sumX[i] += pow(X[i*d+j], 2);
         }
     }
 
@@ -83,7 +83,7 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
         sumY[i]=0;
         for (int j = 0; j < d; j++)
         {
-            sumY[i] += pow(Y[i + j * m], 2);
+            sumY[i] += pow(Y[i*d+j], 2);
         }
     }
 
@@ -104,7 +104,7 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
     }
 
     /* Calculate list C = X*Y */
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, m, d, alpha, X, n, Y, m, beta, C, n);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, m, d, alpha, X, d, Y, d, beta, C, m);
 
     printf("\nC = ");
     printMatrix(C, n*m);
@@ -115,7 +115,7 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
     {
         for (int j = 0; j < m; j++)
         {
-            C[i + j * n] = sqrt(sumX[i] - 2 * C[i + j * n] + sumY[j]);
+            C[i*m+j] = sqrt(sumX[i] - 2 * C[i*m+j] + sumY[j]);
         }
     }   
 
@@ -133,7 +133,7 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
 int partition(double* a, int left, int right, int pivotIndex)
 {
     // Pick pivotIndex as pivot from the array
-    int pivot = a[pivotIndex];
+    double pivot = a[pivotIndex];
  
     // Move pivot to end
     SWAP(a[pivotIndex], a[right]);
@@ -147,7 +147,7 @@ int partition(double* a, int left, int right, int pivotIndex)
     // is incremented and that element would be placed before the pivot.
     for (int i = left; i < right; i++)
     {
-        if (a[i] <= pivot)
+        if (a[i]-pivot<0.001f)
         {
             SWAP(a[i], a[pIndex]);
             pIndex++;
@@ -197,11 +197,11 @@ void checkElems(double* A, int n, int m, int k, double kElem, int pointNum, int*
     int left = pointNum*n;
     int right = (pointNum+1)*n - 1;
 
-    for(int i=left;i<=right && elemCount<k;++i){ //no need to keep checking the elements if we have already found the k smallest ones
-        if(A[i]-kElem<0.001f){
-            if(A[i]<0.001f) continue;
-            nidx[pointNum+m*elemCount] = i%n; //we do %n to find in which row of X this point is stored
-            ndist[pointNum+m*elemCount] = A[i];
+    for(int i=0;i<n && elemCount<k;++i){ //no need to keep checking the elements if we have already found the k smallest ones
+        if(A[i*m+pointNum]-kElem<0.001f){
+            if(A[i*m+pointNum]<0.001f) continue;
+            nidx[pointNum*k+elemCount] = i; 
+            ndist[pointNum*k+elemCount] = A[i*m+pointNum];
             elemCount++;
         }
     }
@@ -222,7 +222,7 @@ void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndi
 
     //now mPointDistanceMatrix contains the distances the points of X have from point pointNum of Y
     for(int i=0;i<n;++i){
-        mPointDistanceMatrix[i] = D[pointNum*n+i];
+        mPointDistanceMatrix[i] = D[i*m+pointNum];
     }
 
     printf("mPointDistanceMatrix=\n");
@@ -283,7 +283,7 @@ knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
-    int n = 4, m = 2, d = 2, k = 3;
+    int n = 4, m = 3, d = 2, k = 2;
     srand(time(NULL));
 
     int threadNum=atoi(argv[1]);    //number of threads
@@ -303,21 +303,7 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
-/*
-    //double X[6] = {1.0, 2.0, 1.0, -3.0, 4.0, -1.0}; // 3x2
-    X[0] = 1.0;
-    X[1] = 2.0;
-    X[2] = 1.0;
-    X[3] = -3.0;
-    X[4] = 4.0;
-    X[5] = -1.0;
-
-    Y[0] = 1.0;
-    Y[1] = 2.0;
-    Y[2] = -3.0;
-    Y[3] = 4.0;
-*/
-
+    //create set X and y
     createRandomMatrix(X,n*d);
     createRandomMatrix(Y,m*d);
 
@@ -329,10 +315,7 @@ int main(int argc, char* argv[])
 
     knnresult result = kNN(X,Y,n,m,d,k);
 
-    //printf("nidx = \n");
-    //printMatrix(result.nidx, m*k);
-
-    printf("ndist = \n");
+    printf("\nndist = \n");
     printMatrix(result.ndist, m*k);
 
     printf("nidx = \n");
