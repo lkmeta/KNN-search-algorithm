@@ -28,6 +28,7 @@ void mergeLists(knnresult old, knnresult new, int m, int k, int offset){
             nidxComb[j] = old.nidx[i*k+j];
             nidxComb[k+j] = new.nidx[i*k+j]+offset; //giati ta metraei apo to 0 kai den lamvanei ypopsin oti den einai sthn arxh tou d
         }
+/*        
         printf("ndistComb=\n");
         printMatrix(ndistComb,2*k);
 
@@ -36,17 +37,17 @@ void mergeLists(knnresult old, knnresult new, int m, int k, int offset){
             printf("%d ", nidxComb[j]);
         }
         printf("\n");
-
+*/
         double kElem = quickSelect(ndistComb,nidxComb,0,2*k-1,k-1); //to kElem tha fugei meta
 
-        printf("kElem=%lf\n", kElem);
+//        printf("kElem=%lf\n", kElem);
 
         for(int j=0;j<k;++j){
             old.ndist[i*k+j] = ndistComb[j];
             old.nidx[i*k+j] = nidxComb[j];
         }
     }
-
+/*
     printf("Finally:\n");
     printf("ndist = \n");
     printMatrix(old.ndist, m*k);
@@ -56,7 +57,7 @@ void mergeLists(knnresult old, knnresult new, int m, int k, int offset){
         printf("%d ", old.nidx[i]);
     }
     printf("\n");
-
+*/
 
     free(ndistComb);
     free(nidxComb);
@@ -77,6 +78,8 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
 
     knnresult result;
     int count;
+    int originRank;
+    int originSize;
 
     //auta tha theloun allagh logika meta
     MPI_Status stats[2*numtasks];   //Isend first, then Irecv
@@ -137,30 +140,44 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
 
         printf("In process %d, size = %d\n", rank, (n/numtasks));
 
-        int dest = 1;
+        memcpy(Y,Z,n/numtasks*d*sizeof(double));
 
-        result = kNN(X,X,n/numtasks,n/numtasks,d,k);
         knnresult newResult;
 
-        MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
-        MPI_Isend(X, (n/numtasks)*d, MPI_DOUBLE, next, 10, MPI_COMM_WORLD, &reqs[rank]);
+        originRank = rank;
 
-        MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+        for(int i=0;i<numtasks-1;++i){
+            originSize = sendCounts[originRank];
 
-        MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
-        Y = Z;
+            MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
+            MPI_Isend(Y, originSize, MPI_DOUBLE, next, 10, MPI_COMM_WORLD, &reqs[rank]);
 
-        printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
-/*
-        if(count==(n/numtasks)*d){
-            newResult = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+            if(i==0){
+                result = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+            }
+
+            MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+
+            MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
+            
+            memcpy(Y,Z,count*sizeof(double));
+
+            printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
+
+            if(count==(n/numtasks)*d){
+                newResult = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+            }
+            else{
+                newResult = kNN(Y,X,n/numtasks+1,n/numtasks,d,k);
+            }
+
+            originRank = (numtasks + stats[numtasks+rank].MPI_SOURCE - i) % numtasks;
+
+            mergeLists(result,newResult,n/numtasks,k,offsets[originRank]/d);
+
+            MPI_Wait(&reqs[rank], &stats[rank]);
         }
-        else{
-            newResult = kNN(Y,X,n/numtasks+1,n/numtasks,d,k);
-        }
-
-        mergeLists(result,newResult,n/numtasks,k,offsets[stats[numtasks+rank].MPI_SOURCE]/d);
-*/
+//bgale ta sxolia apo katw gia testing se auto to branch
 /*
         printf("\nndist = \n");
         printMatrix(result.ndist, n/numtasks*k);
@@ -183,38 +200,51 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
     
         printf("In process %d, size = %d\n", rank, (n/numtasks));
 
-        memcpy(X,Z,n/numtasks*d*sizeof(double));
+        memcpy(X,Z,(n/numtasks)*d*sizeof(double));
+        memcpy(Y,Z,(n/numtasks)*d*sizeof(double));
 
         printf("In process %d X=\n", rank);
         printMatrix(X,(n/numtasks)*d);
 
-        MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
-        MPI_Isend(X, (n/numtasks)*d, MPI_DOUBLE, next, 10, MPI_COMM_WORLD, &reqs[rank]);
-/*
-        result = kNN(X,X,n/numtasks,n/numtasks,d,k);
-
-        for(int i=0;i<n/numtasks*k;++i){
-            result.nidx[i] += offsets[rank]/d;
-        }
-*/
         knnresult newResult;
 
-        MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+        originRank = rank;
 
-        MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
-        Y = Z;
+        for(int i=0;i<numtasks-1;++i){
+            originSize = sendCounts[originRank];
 
-        printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
-/*
-        if(count==(n/numtasks)*d){
-            newResult = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+            MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
+            MPI_Isend(Y, originSize, MPI_DOUBLE, next, 10, MPI_COMM_WORLD, &reqs[rank]);
+
+            if(i==0){
+                result = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+                for(int i=0;i<n/numtasks*k;++i){
+                    result.nidx[i] += offsets[rank]/d;
+                }
+            }
+
+            MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+
+            MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
+            
+            memcpy(Y,Z,count*sizeof(double));
+
+            printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
+
+            if(count==(n/numtasks)*d){
+                newResult = kNN(Y,X,n/numtasks,n/numtasks,d,k);
+            }
+            else{
+                newResult = kNN(Y,X,n/numtasks+1,n/numtasks,d,k);
+            }
+
+            originRank = (numtasks + stats[numtasks+rank].MPI_SOURCE - i) % numtasks;
+
+            mergeLists(result,newResult,n/numtasks,k,offsets[originRank]/d);
+
+            MPI_Wait(&reqs[rank], &stats[rank]);
         }
-        else{
-            newResult = kNN(Y,X,n/numtasks+1,n/numtasks,d,k);
-        }
-
-        mergeLists(result,newResult,n/numtasks,k,offsets[stats[numtasks+rank].MPI_SOURCE]/d);
-*/
+//bgale ta sxolia apo katw gia testing se auto to branch
 /*
         printf("\nIn process %d ndist = \n", rank);
         printMatrix(result.ndist, n/numtasks*k);
@@ -225,7 +255,6 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
         }
         printf("\n");
 */
-
         free(X);
     }
 
@@ -239,37 +268,51 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
         printf("In process %d, size = %d\n", rank, (n/numtasks + 1));
 
         memcpy(X,Z,(n/numtasks+1)*d*sizeof(double));
+        memcpy(Y,Z,(n/numtasks+1)*d*sizeof(double));
 
         printf("In process %d X=\n", rank);
         printMatrix(X,(n/numtasks + 1)*d);
 
-        MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
-        MPI_Isend(X, (n/numtasks+1)*d, MPI_DOUBLE, next, 11, MPI_COMM_WORLD, &reqs[rank]);
-
-        result = kNN(X,X,n/numtasks+1,n/numtasks+1,d,k);
-        for(int i=0;i<(n/numtasks+1)*k;++i){
-            result.nidx[i] += offsets[rank]/d;
-        }
-
         knnresult newResult;
 
-        MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+        originRank = rank;
 
-        MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
-        Y = Z;
+        for(int i=0;i<numtasks-1;++i){
+            originSize = sendCounts[originRank];
 
-        printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
+            MPI_Irecv(Z, (n/numtasks + 1)*d, MPI_DOUBLE, prev, MPI_ANY_TAG, MPI_COMM_WORLD, &reqs[numtasks+rank]);
+            MPI_Isend(Y, originSize, MPI_DOUBLE, next, 11, MPI_COMM_WORLD, &reqs[rank]);
 
-        if(count==(n/numtasks)*d){
-            newResult = kNN(Y,X,n/numtasks,n/numtasks+1,d,k);
+            if(i==0){
+                result = kNN(Y,X,n/numtasks+1,n/numtasks+1,d,k);
+                for(int i=0;i<(n/numtasks+1)*k;++i){
+                    result.nidx[i] += offsets[rank]/d;
+                }
+            }
+
+            MPI_Wait(&reqs[numtasks+rank], &stats[numtasks+rank]);
+
+            MPI_Get_count(&stats[numtasks+rank], MPI_DOUBLE, &count);
+
+            memcpy(Y,Z,count*sizeof(double));
+
+            printf("In process %d : now came %d elements from process %d\n",rank, count, stats[numtasks+rank].MPI_SOURCE);
+
+            if(count==(n/numtasks)*d){
+                newResult = kNN(Y,X,n/numtasks,n/numtasks+1,d,k);
+            }
+            else{
+                newResult = kNN(Y,X,n/numtasks+1,n/numtasks+1,d,k);
+            }
+
+            originRank = (numtasks + stats[numtasks+rank].MPI_SOURCE - i) % numtasks;
+
+            mergeLists(result,newResult,n/numtasks+1,k,offsets[originRank]/d);
+
+            MPI_Wait(&reqs[rank], &stats[rank]);
         }
-        else{
-            newResult = kNN(Y,X,n/numtasks+1,n/numtasks+1,d,k);
-        }
-
-        mergeLists(result,newResult,n/numtasks+1,k,offsets[stats[numtasks+rank].MPI_SOURCE]/d);
-
-/*
+//bgale ta sxolia apo katw gia testing se auto to branch
+/* 
         printf("\nIn process %d ndist = \n", rank);
         printMatrix(result.ndist, (n/numtasks+1)*k);
 
@@ -279,7 +322,6 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
         }
         printf("\n");
 */
-
         free(X);
     }
 
