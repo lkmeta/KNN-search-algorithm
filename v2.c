@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 
 typedef struct Node Node;
 
@@ -11,6 +12,8 @@ struct Node
     Node* right;
     int p;
     double mu;
+    double* dists;
+    int* indx;
 };
 
 /* Function to sort an array using insertion sort*/
@@ -61,7 +64,7 @@ int sampledAlready(int* sampleIndex, int sampleSize, int index){
     return result;
 }
 
-int* sampleSet(double* X, double* sample, int sampleSize, int n, int d){
+int* sampleSet(double* X, double* sample,int* indexes, int sampleSize, int n, int d){
     int count = 0;
     int index;
 
@@ -76,26 +79,26 @@ int* sampleSet(double* X, double* sample, int sampleSize, int n, int d){
     }
     int i=0;
     while(count<sampleSize){
-        //printf("\ni=%d, count=%d\n", i,count);
+        printf("\ni=%d, count=%d\n", i,count);
         index = rand() % n; 
-        //printf("index=%d\n", index);
+        printf("index=%d\n", index);
 
-        if(sampledAlready(sampleIndex,sampleSize,index)==0){
-            //printf("Didn't find it\n");
-            sampleIndex[count]=index;
+        if(sampledAlready(sampleIndex,sampleSize,indexes[index])==0){
+            printf("Didn't find it\n");
+            sampleIndex[count]=indexes[index];
             for(int j=0;j<d;++j){
                 sample[count*d+j]=X[index*d+j];
             }
             count++;
         }
-/*        
+        
         printf("sampleIndex=\n");
         for(int k=0;k<sampleSize;++k){
             printf("%d ",sampleIndex[k]);
         }
         printf("\n");
         i++;
-*/
+
     }
 
     return sampleIndex;
@@ -104,6 +107,11 @@ int* sampleSet(double* X, double* sample, int sampleSize, int n, int d){
 double findMedian(double* sampleDistances,int* indexes, int sampleSize){
     double mu;
 
+    printf("\nbefore insertionSort nd->indx=\n");
+    for(int i=0;i<sampleSize;++i){
+        printf("%d ", indexes[i]);
+    }
+
     insertionSort(sampleDistances,indexes,sampleSize);
 /*
     printf("\nSorted sampleDistances=\n");
@@ -111,6 +119,12 @@ double findMedian(double* sampleDistances,int* indexes, int sampleSize){
         printf("%lf ",sampleDistances[j]);
     }
 */
+
+    printf("\nafter insertionSort nd->indx=\n");
+    for(int i=0;i<sampleSize;++i){
+        printf("%d ", indexes[i]);
+    }
+
     int middle = (sampleSize+1)/2 - 1;
 
     if(sampleSize%2==1){
@@ -123,9 +137,14 @@ double findMedian(double* sampleDistances,int* indexes, int sampleSize){
     return mu;
 }
 
-int selectVP(double* X, int n, int d){
+int selectVP(double* X, int* indexes, int n, int d){
+
+    printf("S=\n");
+    for(int i=0;i<n*d;++i){
+        printf("%lf ", X[i]);
+    }
     
-    int sampleSize = 10; //na dw an yparxei isws allh kalyterh epilogh
+    int sampleSize = 5; //na dw an yparxei isws allh kalyterh epilogh
 
     srand(time(NULL));
 
@@ -153,13 +172,13 @@ int selectVP(double* X, int n, int d){
         exit(-1);    
     }
 
-    int* sampleIndex = sampleSet(X,P,sampleSize,n,d);
-/*
+    int* sampleIndex = sampleSet(X,P,indexes,sampleSize,n,d);
+
     printf("\nP=\n");
     for(int i=0;i<sampleSize*d;++i){
         printf("%lf ",P[i]);
     }
-*/
+
  
     int middle;
     double mu;
@@ -169,7 +188,7 @@ int selectVP(double* X, int n, int d){
 
     for(int i=0;i<sampleSize;++i){
 //        printf("\ni=%d, p=%lf %lf\n",i,P[i*d], P[i*d+1]);
-        int* sampleIndex2 = sampleSet(X,D,sampleSize,n,d);
+        int* sampleIndex2 = sampleSet(X,D,indexes,sampleSize,n,d);
 /*        printf("\nD=\n");
         for(int j=0;j<sampleSize*d;++j){
             printf("%lf ", D[j]);
@@ -200,8 +219,9 @@ int selectVP(double* X, int n, int d){
             bestSpread = spread;
             bestP = sampleIndex[i];
         }
-//        printf("bestspread=%lf, bestP=%d\n",bestSpread,bestP);
     }
+
+    printf("bestspread=%lf, bestP=%d\n",bestSpread,bestP);
 
     free(P);
     free(D);
@@ -211,7 +231,18 @@ int selectVP(double* X, int n, int d){
     return bestP;
 }
 
-Node* makeVPT(double* S,int n, int d){
+int findVPIndx(int vp, int* indexes, int n){
+    int VPindex;
+    for(int i=0;i<n;++i){
+        if(indexes[i]==vp){
+            VPindex=i;
+            break;
+        }
+    }
+    return VPindex;
+}
+
+Node* makeVPT(double* S,int n, int d, int* indexes, int B){
     Node* nd;
 
     if(n==0){
@@ -225,61 +256,203 @@ Node* makeVPT(double* S,int n, int d){
         exit(-1);
     }
 
-    nd->p = selectVP(S,n,d);
-
-    double* VPDistances = (double*)malloc(n*sizeof(double));
-    if(VPDistances==NULL){
-        printf("Error in makeVPT: Couldn't allocate memory for VPDistances");
-        exit(-1);    
-    }
-
-    int* VPIndexes = (int*)malloc(n*sizeof(int));
-    if(VPIndexes==NULL){
-        printf("Error in makeVPT: Couldn't allocate memory for VPIndexes");
-        exit(-1);    
-    }
-
-    for(int i=0;i<n;++i){
-        VPIndexes[i] = i;
-        VPDistances[i]=0;
-        for(int j=0;j<d;++j){
-            VPDistances[i] += pow(S[i*d+j]-S[(nd->p)*d+j],2);
+    if(n<2*B+1){
+        nd->p = -1;
+        nd->mu = -1.0;
+        nd->left=NULL;
+        nd->right=NULL;
+        nd->dists=NULL;
+        nd->indx = (int*)malloc(n*sizeof(int));
+        if(nd->indx==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for nd->indx");
+            exit(-1);
         }
-        VPDistances[i] = sqrt(VPDistances[i]);
+        memcpy(nd->indx,indexes,n*sizeof(int));
     }
 
-    printf("\nbefore median VPDistances=\n");
-    for(int i=0;i<n;++i){
-        printf("%lf ", VPDistances[i]);
+    else{
+        nd->p = selectVP(S,indexes,n,d); //to index tou kalyterou stoixeio ston arxiko pinaka X
+
+        printf("Indexes=\n");
+        for(int i=0;i<n;++i){
+            printf("%d ", indexes[i]);
+        }
+        printf("\n");
+
+        int pInd = findVPIndx(nd->p,indexes,n); //to index tou vp ston pinaka S ths sugkekrimenhs klhshs
+
+        printf("Index of nd->p=%d\n",pInd);
+        printf("nd->p=\n");
+        for(int i=0;i<d;++i){
+            printf("%lf ",S[pInd*d+i]);
+        }
+        printf("\n");
+
+        nd->dists = (double*)malloc(n*sizeof(double));
+        if(nd->dists==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for nd->dists");
+            exit(-1);    
+        }
+
+        for(int i=0;i<n;++i){
+            nd->dists[i]=0;
+            for(int j=0;j<d;++j){
+                nd->dists[i] += pow(S[i*d+j]-S[pInd*d+j],2);
+            }
+            nd->dists[i] = sqrt(nd->dists[i]);
+        }
+
+        nd->indx = (int*)malloc(n*sizeof(int));
+        if(nd->indx==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for nd->indx");
+            exit(-1);    
+        }
+
+        memcpy(nd->indx,indexes,n*sizeof(int));
+
+        printf("before median nd->dists=\n");
+        for(int i=0;i<n;++i){
+            printf("%lf ", nd->dists[i]);
+        }
+
+        printf("\nbefore median nd->indx=\n");
+        for(int i=0;i<n;++i){
+            printf("%d ", nd->indx[i]);
+        }
+
+        double* distsTemp = (double*)malloc(n*sizeof(double)); //giati h findMedian xalaei thn seira twn stoixeiwn
+        if(distsTemp==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for distsTemp");
+            exit(-1);    
+        }
+
+        memcpy(distsTemp,nd->dists,n*sizeof(double));
+
+        nd->mu = findMedian(distsTemp,indexes,n);
+
+        free(distsTemp);
+//        free(indexes); //isws na kanei to free auth pou thn pernaei san orisma
+
+        printf("\nmu=%lf\n",nd->mu);
+
+        printf("after median nd->dists=\n");
+        for(int i=0;i<n;++i){
+            printf("%lf ", nd->dists[i]);
+        }
+
+        printf("\nafter median nd->indx=\n");
+        for(int i=0;i<n;++i){
+            printf("%d ", nd->indx[i]);
+        }
+
+        double* right;
+        int* rightIndexes;
+        double* left;
+        int* leftIndexes;
+
+        int lSize = 0;
+        int rSize = 0;
+
+        for(int i=0;i<n;++i){
+            if(nd->dists[i]<=0.0001f){
+                if(i==n-1) break;
+                else continue;
+            }
+            if(nd->dists[i]-nd->mu<=0.0001f){
+                lSize++;
+            }
+            else{
+                rSize++;
+            }
+        }
+
+
+        right = (double*)malloc(rSize*d*sizeof(double));
+        if(right==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for right");
+            exit(-1);    
+        }
+
+        rightIndexes = (int*)malloc(rSize*sizeof(int));
+        if(rightIndexes==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for rightIndexes");
+            exit(-1);    
+        }
+
+        left = (double*)malloc(lSize*d*sizeof(double));
+        if(left==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for left");
+            exit(-1);    
+        }
+
+        leftIndexes = (int*)malloc(lSize*sizeof(int));
+        if(leftIndexes==NULL){
+            printf("Error in makeVPT: Couldn't allocate memory for leftIndexes");
+            exit(-1);    
+        }
+
+        printf("lSize=%d, rSize=%d",lSize,rSize);
+        
+        int lCounter=0;
+        int rCounter=0;
+
+        for(int i=0;i<n;++i){
+            if(nd->dists[i]<=0.0001f){
+                if(i==n-1) break;
+                else continue;
+            }
+            if(nd->dists[i]-nd->mu<=0.0001f){ //<=
+                if(lCounter>=lSize) break;
+                else{
+                    leftIndexes[lCounter] = nd->indx[i];
+                    for(int j=0;j<d;++j){
+                        left[lCounter*d+j] = S[i*d+j];
+                    }
+                    lCounter++;
+                }
+            }
+            else{
+                if(rCounter>=rSize) break;
+                else{
+                    rightIndexes[rCounter] = nd->indx[i];
+                    for(int j=0;j<d;++j){
+                        right[rCounter*d+j] = S[i*d+j];
+                    }
+                    rCounter++;
+                }
+            }
+        }
+
+        printf("\nleftIndexes=\n");
+        for(int i=0;i<lSize;++i){
+            printf("%d ", leftIndexes[i]);
+        }
+
+        printf("\nleft=\n");
+        for(int i=0;i<lSize*d;++i){
+            printf("%lf ", left[i]);
+        }
+
+        printf("\nrightIndexes=\n");
+        for(int i=0;i<rSize;++i){
+            printf("%d ", rightIndexes[i]);
+        }
+
+        printf("\nright=\n");
+        for(int i=0;i<rSize*d;++i){
+            printf("%lf ", right[i]);
+        }
+
+        nd->left = makeVPT(left,lSize,d,leftIndexes,B);
+        nd->right = makeVPT(right,rSize,d,rightIndexes,B);
     }
-
-    printf("\nbefore median VPIndexes=\n");
-    for(int i=0;i<n;++i){
-        printf("%d ", VPIndexes[i]);
-    }
-
-    nd->mu = findMedian(VPDistances,VPIndexes,n);
-
-    printf("\nafter median VPDistances=\n");
-    for(int i=0;i<n;++i){
-        printf("%lf ", VPDistances[i]);
-    }
-
-    printf("\nafter median VPIndexes=\n");
-    for(int i=0;i<n;++i){
-        printf("%d ", VPIndexes[i]);
-    }
-
-    //prepei na ftia3w ta left kai right sets
-    //kai meta h anadromh
-    //na dw pws tha ginei h ylopoihsh dedomenou tou B gia ta fulla
 
     return nd;
 }
 
 int main(){
 
-    int n=10;
+    int n=11;
     int d=2;
 
     double* X = (double *)malloc(n*d*sizeof(double));
@@ -308,6 +481,18 @@ int main(){
     X[17]=5.0;
     X[18]=-1.0;
     X[19]=-2.0;
+    X[20]=-6.0;
+    X[21]=-4.0;
+
+    int* indexes = (int*)malloc(n*sizeof(int));
+    if(indexes==NULL){
+        printf("Error in main: Couldn't allocate memory for indexes");
+        exit(-1);    
+    }
+
+    for(int i=0;i<n;++i){
+        indexes[i]=i;
+    }
 
 /*
     int sampleSize = 5;
@@ -332,8 +517,10 @@ int main(){
     int vp =selectVP(X,n,d);
     printf("vp=%d\n",vp);
 */
+    int B=2;
 
-    makeVPT(X,n,d);
+    makeVPT(X,n,d,indexes,B);
 
+    free(indexes);
     free(X);
 }
