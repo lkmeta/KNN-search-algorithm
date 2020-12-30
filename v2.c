@@ -3,8 +3,23 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <limits.h>
 
 typedef struct Node Node;
+typedef struct queryPoint queryPoint;
+
+struct queryPoint
+{
+    double *coord; //!< d coords for query point               [1-by-d]
+    int *nidx;     //!< Indices (0-based) of nearest neighbors [1-by-k]
+    double *ndist; //!< Distance of nearest neighbors          [1-by-k]
+    int k;         //!< Number of nearest neighbors            [scalar]
+
+    int numOfIndexes;
+ 
+    //xreiazetai?
+    int flag; //!< 0 if we haven't found yet the nearest neighbors else 1
+};
 
 struct Node
 {
@@ -14,7 +29,10 @@ struct Node
     double mu;
     double* dists;
     int* indx;
+    int elems;
 };
+
+
 
 /* Function to sort an array using insertion sort*/
 void insertionSort(double* arr,int* indexes, int n) 
@@ -258,7 +276,7 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
 
     if(n<2*B+1){
         nd->p = -1;
-        nd->mu = -1.0;
+        nd->mu = -INFINITY;
         nd->left=NULL;
         nd->right=NULL;
         nd->dists=NULL;
@@ -449,6 +467,80 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
 
     return nd;
 }
+
+int findBiggest(queryPoint* q){
+    int biggest=0;
+    double biggestRes = -INFINITY;
+    for(int i=0;i<q->k;++i){
+        if(q->ndist[i]-biggestRes>0.001f){
+            biggestRes = q->ndist[i];
+            biggest = i;
+        }
+    }
+    return biggest;
+}
+
+void searchVPT(Node* nd, queryPoint* q, double* X, int d, double tau){
+
+    if(nd==NULL){
+        printf("nd was NULL");
+        return;
+    }
+
+    double d=0.0;
+    for(int i=0;i<d;++i){
+        d += pow(X[(nd->p)*d+i]-q->coord[i] ,2);
+    }
+    d = sqrt(d);
+
+    int biggest;
+
+    //ananewse to tau kai prosthese sthn lista to vp
+    if(d-tau<-0.001f){
+        tau = d;
+        if(q->numOfIndexes<q->k-1){
+            q->ndist[q->numOfIndexes] = d;
+            q->nidx[q->numOfIndexes] = nd->p;
+            q->numOfIndexes++;
+        }
+        else{
+            biggest = findBiggest(q);
+            q->ndist[biggest] = d;
+            q->nidx[biggest] = nd->p;
+        }
+    }
+
+    if(d-nd->mu<0.001f && nd->mu!=-INFINITY){
+        searchVPT(nd->left,q,X,d,tau);
+    }
+
+    else{
+        if(nd->mu!=-INFINITY){
+            searchVPT(nd->right,q,X,d,tau);
+        }
+    }
+
+    //an eimaste se fyllo
+    if(nd->mu==-INFINITY){
+        for(int i=0;i<nd->elems;++i){
+            d=0;
+            //calculate distance of q to these points
+            for(int j=0;j<d;++j){
+                d += pow(X[nd->indx[i]*d+j]-q->coord[i],2);
+            }
+            d =sqrt(d);
+            biggest = findBiggest(q);
+            //brhkame kontinotero geitona
+            if(d-q->ndist[biggest]<-0.001f){
+                q->ndist[biggest] = d;
+                q->nidx[biggest] = nd->indx[i];
+                if(q->numOfIndexes<q->k-1) q->numOfIndexes++; //na to tsekarw auto
+            }
+        }
+    }
+
+}
+
 
 int main(){
 
