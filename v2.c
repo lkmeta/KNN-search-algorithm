@@ -470,14 +470,19 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
 
 int findBiggest(queryPoint* q){
     int biggest=0;
-    double biggestRes = -INFINITY;
+    double biggestRes = -1.0;
     for(int i=0;i<q->k;++i){
+        if(q->nidx[i]==-1) break;
         if(q->ndist[i]-biggestRes>0.001f){
             biggestRes = q->ndist[i];
             biggest = i;
         }
     }
     return biggest;
+}
+
+void searchLeaf(){
+
 }
 
 void searchVPT(Node* nd, queryPoint* q, double* X, int d, double tau){
@@ -538,6 +543,8 @@ void searchVPT(Node* nd, queryPoint* q, double* X, int d, double tau){
             }
         }
     }
+    biggest = findbiggest(q);
+    tau = q->ndist[biggest];
 
 }
 
