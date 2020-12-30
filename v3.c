@@ -316,24 +316,6 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
 
         memcpy(nd->indx, indexes, n * sizeof(int));
 
-        // int pInd = findVPIndx(nd->p, indexes, n);
-        // // printf("Index of nd->p=%d\n",pInd);
-        // // printf("nd->p=\n");
-        // // for(int i=0;i<d;++i){
-        // //     printf("%lf ",S[pInd*d+i]);
-        // // }
-        // // printf("\n");
-
-        // for (int i = 0; i < n; ++i)
-        // {
-        //     nd->dists[i] = 0;
-        //     for (int j = 0; j < d; ++j)
-        //     {
-        //         nd->dists[i] += pow(S[i * d + j] - S[pInd * d + j], 2);
-        //     }
-        //     nd->dists[i] = sqrt(nd->dists[i]);
-        // }
-
         // add length of indx array
         nd->numOfIndexes = n;
     }
@@ -560,24 +542,45 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
     }
 
     int length = currentNode->numOfIndexes;
-    printf("\nWORKING");
-    printf("\nlength = %d ", length);
+    int newLength = length + currentP->numOfIndexes;
+    // printf("\n... add elements process...");
+    // printf("\nlen = %d ", length);
+    // printf(", numOfIndexes = %d ", (currentP->numOfIndexes));
+    // printf(", NEW LEN = %d ", newLength);
 
-    int *tempIdx = (int *)malloc(length * sizeof(int));
-    if (tempIdx == NULL)
+    // Lists with indexes and dists from cuppent point
+    int *pIdx = (int *)malloc(currentP->numOfIndexes * sizeof(int));
+    if (pIdx == NULL)
     {
-        printf("Error in addElements: Couldn't allocate memory for tempIdx");
+        printf("Error in addElements: Couldn't allocate memory for pIdx");
         exit(-1);
     }
 
-    double *tempDist = (double *)malloc(length * sizeof(double));
-    if (tempDist == NULL)
+    double *pDists = (double *)malloc(currentP->numOfIndexes * sizeof(double));
+    if (pDists == NULL)
     {
-        printf("Error in addElements: Couldn't allocate memory for tempDist");
+        printf("Error in addElements: Couldn't allocate memory for pDists");
         exit(-1);
     }
 
-    printf("\ncurrentNode: p = %d , mu = %lf ", currentNode->p, currentNode->mu);
+    pIdx = currentP->nidx;
+    pDists = currentP->ndist;
+
+    // printf("\nPRIN INDX = ");
+    // for (int i = 0; i < (currentP->numOfIndexes); i++)
+    // {
+    //     printf(" %d ", pIdx[i]);
+    // }
+    // printf("\nPRIN DISTS = ");
+    // for (int i = 0; i < (currentP->numOfIndexes); i++)
+    // {
+    //     printf(" %lf ", pDists[i]);
+    // }
+
+    pIdx = (int *)realloc(pIdx, sizeof(int) * newLength);
+    pDists = (double *)realloc(pDists, sizeof(double) * newLength);
+
+    // printf("\ncurrentNode: p = %d , mu = %lf ", currentNode->p, currentNode->mu);
     // printf("\nnumOfInd: %d ", currentNode->numOfIndexes);
     // printf("\nIND: ");
     // for (int i = 0; i < currentNode->numOfIndexes; i++)
@@ -586,115 +589,111 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
     // }
 
     for (int i = 0; i < length; i++)
-    {   
-        // temporary idx to add
-        tempIdx[i] = currentNode->indx[i];
+    {
 
         // eimai se node
         if (currentNode->p != -1)
         {
+            // temporary idx to add
+            pIdx[i + currentP->numOfIndexes] = currentNode->p;
+
             // calculate temporary dist to add
-            tempDist[i] = 0;
+            pDists[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
-                tempDist[i] += pow(S[2 * currentNode->p + j] - currentP->coord[j], 2);
+                pDists[i + currentP->numOfIndexes] += pow(S[2 * currentNode->p + j] - currentP->coord[j], 2);
             }
-            tempDist[i] = sqrt(tempDist[i]);
+            pDists[i + currentP->numOfIndexes] = sqrt(pDists[i + currentP->numOfIndexes]);
         }
         // eimai se fyllo
         else
         {
+            // temporary idx to add
+            pIdx[i + currentP->numOfIndexes] = currentNode->indx[i];
+
             // calculate temporary dist to add
-            tempDist[i] = 0;
+            pDists[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
-                tempDist[i] += pow(S[2 * currentNode->indx[i] + j] - currentP->coord[j], 2);
+                pDists[i + currentP->numOfIndexes] += pow(S[2 * currentNode->indx[i] + j] - currentP->coord[j], 2);
             }
-            tempDist[i] = sqrt(tempDist[i]);
+            pDists[i + currentP->numOfIndexes] = sqrt(pDists[i + currentP->numOfIndexes]);
         }
     }
 
+    // printf("\nBEFORE insertionSort");
     // printf("\ntempIdx = ");
-    // for (int i = 0; i < currentNode->numOfIndexes; i++)
+    // for (int i = 0; i < newLength; i++)
     // {
-    //     printf(" %d ", tempIdx[i]);
+    //     printf(" %d ", pIdx[i]);
     // }
     // printf("\ntempDist = ");
-    // for (int i = 0; i < currentNode->numOfIndexes; i++)
+    // for (int i = 0; i < newLength; i++)
     // {
-    //     printf(" %lf ", tempDist[i]);
+    //     printf(" %lf ", pDists[i]);
     // }
+    // printf("\nnumOfInd = %d ", currentP->numOfIndexes);
 
-    insertionSort(tempDist, tempIdx, length);
-
-    printf("\nAFTER insertionSort");
-    printf("\ntempIdx = ");
-    for (int i = 0; i < currentNode->numOfIndexes; i++)
+    if (newLength != 1)
     {
-        printf(" %d ", tempIdx[i]);
-    }
-    printf("\ntempDist = ");
-    for (int i = 0; i < currentNode->numOfIndexes; i++)
-    {
-        printf(" %lf ", tempDist[i]);
-    }
-    printf("\nnumOfInd = %d ", currentP->numOfIndexes);
-
-    // Final lists with indexes and dists for this point
-    int *addedIdx = (int *)malloc(length * sizeof(int));
-    if (addedIdx == NULL)
-    {
-        printf("Error in addElements: Couldn't allocate memory for addedIdx");
-        exit(-1);
+        insertionSort(pDists, pIdx, newLength);
     }
 
-    double *addedDists = (double *)malloc(length * sizeof(double));
-    if (addedDists == NULL)
-    {
-        printf("Error in addElements: Couldn't allocate memory for addedDists");
-        exit(-1);
-    }
+    // printf("\nAFTER insertionSort");
+
+    // printf("\nIDX = ");
+    // for (int i = 0; i < newLength; i++)
+    // {
+    //     printf(" %d ", pIdx[i]);
+    // }
+    // printf("\nDIST = ");
+    // for (int i = 0; i < newLength; i++)
+    // {
+    //     printf(" %lf ", pDists[i]);
+    // }
 
     for (int i = 0; i < length; i++)
     {
         // elegxos an phra hdh ta k pio kontina
         if (currentP->k == currentP->numOfIndexes || currentP->flag == 1)
         {
-            printf("\nk nearest neighbors are found");
-            currentP->flag = 1;
+            // printf("\nk nearest neighbors are found");
+            // currentP->flag = 1;
             break;
         }
         else if (currentP->k - currentP->numOfIndexes > 0)
         {
-            addedIdx[i] = tempIdx[i];
-            addedDists[i] = tempDist[i];
             currentP->numOfIndexes++;
         }
     }
 
-    printf("\nFinally");
-    printf("\ntempIdx = ");
-    for (int i = 0; i < currentNode->numOfIndexes; i++)
-    {
-        printf(" %d ", addedIdx[i]);
-    }
-    printf("\ntempDist = ");
-    for (int i = 0; i < currentNode->numOfIndexes; i++)
-    {
-        printf(" %lf ", addedDists[i]);
-    }
-    printf("\nnumOfInd = %d ", currentP->numOfIndexes);
+    // printf("\nNEW NUMOFINDEXES = %d ", currentP->numOfIndexes);
 
-    /**
-     * TODO: 
-     *      -add tis final lists sto currentP kai na krathsw ta k pio kontina
-     * 
-    */
+    if (currentP->numOfIndexes != newLength)
+    {
+        pIdx = (int *)realloc(pIdx, sizeof(int) * (currentP->numOfIndexes));
+        pDists = (double *)realloc(pDists, sizeof(double) * (currentP->numOfIndexes));
+    }
+
+    // printf("\nfinal Ind = ");
+    // for (int i = 0; i < currentP->numOfIndexes; i++)
+    // {
+    //     printf(" %d ", pIdx[i]);
+    // }
+    // printf("\nfinal Dists = ");
+    // for (int i = 0; i < currentP->numOfIndexes; i++)
+    // {
+    //     printf(" %lf ", pDists[i]);
+    // }
+    // printf("\nnumOfInd = %d ", currentP->numOfIndexes);
+
+    currentP->nidx = pIdx;
+    currentP->ndist = pDists;
 }
 
 queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
 {
-    printf("... inside searchVPT ...\n");
+    // printf("... inside searchVPT ...\n");
 
     Node *currentNode = root;
     if (currentNode == NULL)
@@ -723,6 +722,7 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
 
     if (currentNode->right == NULL && currentNode->left == NULL)
     {
+
         return currentP;
     }
     else
@@ -737,30 +737,30 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
         }
         tempDist = sqrt(tempDist);
 
-        printf("\ntempDist = %lf ", tempDist);
+        // printf("\ntempDist = %lf ", tempDist);
 
         // Check for searching left or right here
         if (tempDist < currentNode->mu)
         {
-            printf("\n\nSearching on left child.\n");
+            // printf("\n\nSearching on left child.\n");
             currentP = searchVPT(currentNode->left, currentP, S);
 
             // Check intersection
             if (currentP->flag == 0)
             {
-                printf("\n\nintersection: Searching on right child.\n");
+                // printf("\n\nintersection: Searching on right child.\n");
                 currentP = searchVPT(currentNode->right, currentP, S);
             }
         }
         else
         {
-            printf("\n\nSearching on right child.\n");
+            // printf("\n\nSearching on right child.\n");
             currentP = searchVPT(currentNode->right, currentP, S);
 
             // Check intersection
             if (currentP->flag == 0)
             {
-                printf("\n\nintersection: Searching on left child.\n");
+                // printf("\n\nintersection: Searching on left child.\n");
                 currentP = searchVPT(currentNode->left, currentP, S);
             }
         }
@@ -773,7 +773,7 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
 int main()
 {
 
-    int n = 10;
+    int n = 11;
     int d = 2;
 
     double *X = (double *)malloc(n * d * sizeof(double));
@@ -803,8 +803,8 @@ int main()
     X[17] = 5.0;
     X[18] = -1.0;
     X[19] = -2.0;
-    // X[20]=-6.0;
-    // X[21]=-4.0;
+    X[20] = -6.0;
+    X[21] = -4.0;
 
     int *indexes = (int *)malloc(n * sizeof(int));
     if (indexes == NULL)
@@ -850,7 +850,11 @@ int main()
 
     printf("VPT has been created.\n");
     //printf("root: p = %d , mu = %lf ", root->p, root->mu);
+    
 
+    /**
+     * CHANGE HERE THE QUERY POINT AND SEARCH THEN IN THE VPT
+    */
     // Search VPT Process
     queryPoint *p;
     p = malloc(sizeof(queryPoint));
@@ -862,19 +866,35 @@ int main()
 
     double *tempCoord = (double *)malloc(d * sizeof(double));
     for (int i = 0; i < d; i++)
-    {
-        tempCoord[i] = X[i + 2];
+    {   
+
+        tempCoord[i] = X[i + 8];
     }
 
     p->coord = tempCoord;
     p->d = 2;
-    p->k = 5;
+    p->k = 6;
     p->flag = 0;
 
     printf("Searching the folowwing query point:\n ");
     printf("x = %lf ", p->coord[0]);
-    printf(", y = %lf \n\n", p->coord[1]);
-    searchVPT(root, p, X);
+    printf(", y = %lf \n", p->coord[1]);
+    p = searchVPT(root, p, X);
+
+    printf("\nsearchVPT Process done.\n");
+    printf("%d nearest neighbors \nIndices: ", p->k);
+    for (int i = 0; i < p->numOfIndexes; i++)
+    {
+        printf(" %d ", p->nidx[i]);
+    }
+
+    printf("\nDistances: ");
+    for (int i = 0; i < p->numOfIndexes; i++)
+    {
+        printf(" %lf ", p->ndist[i]);
+    }
+    
+    // TODO: searchVPT seira poy diasxizw to dentro
 
     free(indexes);
     free(root);
