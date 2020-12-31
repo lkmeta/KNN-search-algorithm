@@ -19,7 +19,7 @@ struct queryPoint
     double tau;
  
     //xreiazetai?
-    int flag; //!< 0 if we haven't found yet the nearest neighbors else 1
+    //int flag; //!< 0 if we haven't found yet the nearest neighbors else 1
 };
 
 struct Node
@@ -31,7 +31,6 @@ struct Node
     double* dists;
     int* indx;
     int elems;
-    int numOfIndexes;
 };
 
 
@@ -288,6 +287,7 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
             exit(-1);
         }
         memcpy(nd->indx,indexes,n*sizeof(int));
+        nd->elems = n;
     }
 
     else{
@@ -329,6 +329,8 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
         }
 
         memcpy(nd->indx,indexes,n*sizeof(int));
+
+        nd->elems = 1;
 
         printf("before median nd->dists=\n");
         for(int i=0;i<n;++i){
@@ -494,41 +496,43 @@ void searchVPT(Node* nd, queryPoint* q, double* X, int d){
 
     int biggest;
     //vres apostash apo vantage point
-    double d;
+    double dst;
 
     //an den eisai se fullo kateva pros ta katw sto dentro
     if(nd->left!=NULL && nd->right!=NULL){
-        d=0.0;
+        dst=0.0;
 
         //ypologise thn apostash apo to vp
         for(int i=0;i<d;++i){
-            d += pow(X[(nd->p)*d+i]-q->coord[i] ,2);
+            dst += pow(X[(nd->p)*d+i]-q->coord[i] ,2);
         }
-        d = sqrt(d);
+        dst = sqrt(dst);
 
-        //ananewse to tau kai prosthese to vp sthn lista
-        if(d-q->tau<-0.001f){
+        //prosthese to vp sthn lista
+        if(dst-q->tau<-0.001f){
             if(q->numOfIndexes<q->k){
-                q->ndist[q->numOfIndexes] = d;
+                q->ndist[q->numOfIndexes] = dst;
                 q->nidx[q->numOfIndexes] = nd->p;
                 q->numOfIndexes++;
             }
             else{
                 biggest = findBiggest(q);
-                q->ndist[biggest] = d;
+                q->ndist[biggest] = dst;
                 q->nidx[biggest] = nd->p;
+
+                //mono an exei gemisei o pinakas geitonwn ananewnoume to tau
+                biggest = findBiggest(q);
+                q->tau = q->ndist[biggest];
             }
-            biggest = findBiggest(q);
-            q->tau = q->ndist[biggest];
         }  
 
-        if(d-nd->mu<0.001f){
+        if(dst-nd->mu<0.001f){
             //thelei isws kai edw kapoion elegxo if
             searchVPT(nd->left,q,X,d);
 
             //elegxos gia na doume an prepei na pame kai sto allo fullo
             //sto allo fullo paw an eimaste sto case 3 h an den exei gemisei o pinakas me tous geitones
-            if(q->numOfIndexes<k || q->tau > nd->mu-d){
+            if((q->numOfIndexes < q->k) || (nd->mu - dst - q->tau < 0.001f)){
                 searchVPT(nd->right,q,X,d);
             }
         }
@@ -538,7 +542,7 @@ void searchVPT(Node* nd, queryPoint* q, double* X, int d){
 
             //elegxos gia na doume an prepei na pame kai sto allo fullo
             //sto allo fullo paw an eimaste sto case 3 h an den exei gemisei o pinakas me tous geitones
-            if(q->numOfIndexes<k || q->tau > nd->mu-d){
+            if((q->numOfIndexes < q->k) || (nd->mu - dst - q->tau < 0.001f)){
                 searchVPT(nd->left,q,X,d);
             }
         }
@@ -550,30 +554,30 @@ void searchVPT(Node* nd, queryPoint* q, double* X, int d){
 
         //calculate distance of q to these points
         for(int i=0;i<nd->elems;++i){
-            d=0.0;
+            dst=0.0;
             for(int j=0;j<d;++j){
-                d += pow(X[nd->indx[i]*d+j]-q->coord[i],2);
+                dst += pow(X[nd->indx[i]*d+j]-q->coord[j],2);
             }
-            d = sqrt(d);
+            dst = sqrt(dst);
             //see if it's a nearest neighbor
-            if(d-q->tau<-0.001f){
+            if(dst-q->tau<-0.001f){
                 //an den exei gemisei o pinakas me tous geitones
                 if(q->numOfIndexes<q->k){
-                    q->ndist[q->numOfIndexes] = d;
+                    q->ndist[q->numOfIndexes] = dst;
                     q->nidx[q->numOfIndexes] = nd->indx[i];
                     q->numOfIndexes++;
                 }
                 else{
                     biggest = findBiggest(q);
-                    q->ndist[biggest] = d;
+                    q->ndist[biggest] = dst;
                     q->nidx[biggest] = nd->indx[i];
+
+                    //mono an exei gemisei o pinakas geitonwn ananewnoume to tau
+                    biggest = findBiggest(q);
+                    q->tau = q->ndist[biggest];
                 }
             }
-        }
-        //ypologise to neo tau
-        biggest = findBiggest(q);
-        q->tau = q->ndist[biggest];
-        
+        }       
     }
     
     return;
@@ -584,6 +588,7 @@ int main(){
 
     int n=11;
     int d=2;
+    int k=3;
 
     double* X = (double *)malloc(n*d*sizeof(double));
     if(X==NULL){
@@ -649,7 +654,60 @@ int main(){
 */
     int B=2;
 
-    makeVPT(X,n,d,indexes,B);
+
+
+    Node *root = makeVPT(X,n,d,indexes,B);
+
+    queryPoint* q = (queryPoint*)malloc(sizeof(queryPoint));
+        if (q == NULL)
+        {
+            printf("failed to allocate memory for query point\n");
+            exit(-1);
+        }
+    q->coord = (double*)malloc(d*sizeof(double));
+    q->nidx = (int*)malloc(k*sizeof(int));
+    q->ndist = (double*)malloc(k*sizeof(double));
+
+    for(int qx=0;qx<n;++qx){
+
+        for(int i=0;i<d;++i){
+            q->coord[i] = X[qx*d+i];
+        }
+
+        q->k = k;
+
+        for(int i=0;i<k;++i){
+            q->nidx[i] = -1;
+        }
+
+        for(int i=0;i<k;++i){
+            q->ndist[i] = -1.0;
+        }
+
+        q->tau = INFINITY;
+
+        q->numOfIndexes = 0;
+
+        printf("\n\nSearching the folowing query point:\n ");
+        printf("x = %lf ", q->coord[0]);
+        printf(", y = %lf \n", q->coord[1]);
+
+        searchVPT(root,q,X,d);
+
+        printf("searchVPT Process done.\n");
+        printf("%d nearest neighbors \nIndices: ", q->k);
+        for (int i = 0; i < q->k; i++)
+        {
+            printf(" %d ", q->nidx[i]);
+        }
+
+        printf("\nDistances: ");
+        for (int i = 0; i < q->k; i++)
+        {
+            printf(" %lf ", q->ndist[i]);
+        
+        }
+    }   
 
     free(indexes);
     free(X);
