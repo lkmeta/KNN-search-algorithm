@@ -16,6 +16,7 @@ struct queryPoint
     int k;         //!< Number of nearest neighbors            [scalar]
 
     int numOfIndexes;
+    double tau;
  
     //xreiazetai?
     int flag; //!< 0 if we haven't found yet the nearest neighbors else 1
@@ -30,6 +31,7 @@ struct Node
     double* dists;
     int* indx;
     int elems;
+    int numOfIndexes;
 };
 
 
@@ -468,10 +470,12 @@ Node* makeVPT(double* S,int n, int d, int* indexes, int B){
     return nd;
 }
 
+//o geitonas me thn megaluterh apostash apo to q
 int findBiggest(queryPoint* q){
     int biggest=0;
-    double biggestRes = -INFINITY;
+    double biggestRes = -1.0;
     for(int i=0;i<q->k;++i){
+        if(q->nidx[i]==-1) break;
         if(q->ndist[i]-biggestRes>0.001f){
             biggestRes = q->ndist[i];
             biggest = i;
@@ -480,65 +484,99 @@ int findBiggest(queryPoint* q){
     return biggest;
 }
 
-void searchVPT(Node* nd, queryPoint* q, double* X, int d, double tau){
+//sto q: arxikopoihmeno to ndist me -1 kai to nidx me -1 kai to tau me +INFINITY
+void searchVPT(Node* nd, queryPoint* q, double* X, int d){
 
     if(nd==NULL){
         printf("nd was NULL");
         return;
     }
 
-    double d=0.0;
-    for(int i=0;i<d;++i){
-        d += pow(X[(nd->p)*d+i]-q->coord[i] ,2);
-    }
-    d = sqrt(d);
-
     int biggest;
+    //vres apostash apo vantage point
+    double d;
 
-    //ananewse to tau kai prosthese sthn lista to vp
-    if(d-tau<-0.001f){
-        tau = d;
-        if(q->numOfIndexes<q->k-1){
-            q->ndist[q->numOfIndexes] = d;
-            q->nidx[q->numOfIndexes] = nd->p;
-            q->numOfIndexes++;
+    //an den eisai se fullo kateva pros ta katw sto dentro
+    if(nd->left!=NULL && nd->right!=NULL){
+        d=0.0;
+
+        //ypologise thn apostash apo to vp
+        for(int i=0;i<d;++i){
+            d += pow(X[(nd->p)*d+i]-q->coord[i] ,2);
+        }
+        d = sqrt(d);
+
+        //ananewse to tau kai prosthese to vp sthn lista
+        if(d-q->tau<-0.001f){
+            if(q->numOfIndexes<q->k){
+                q->ndist[q->numOfIndexes] = d;
+                q->nidx[q->numOfIndexes] = nd->p;
+                q->numOfIndexes++;
+            }
+            else{
+                biggest = findBiggest(q);
+                q->ndist[biggest] = d;
+                q->nidx[biggest] = nd->p;
+            }
+            biggest = findBiggest(q);
+            q->tau = q->ndist[biggest];
+        }  
+
+        if(d-nd->mu<0.001f){
+            //thelei isws kai edw kapoion elegxo if
+            searchVPT(nd->left,q,X,d);
+
+            //elegxos gia na doume an prepei na pame kai sto allo fullo
+            //sto allo fullo paw an eimaste sto case 3 h an den exei gemisei o pinakas me tous geitones
+            if(q->numOfIndexes<k || q->tau > nd->mu-d){
+                searchVPT(nd->right,q,X,d);
+            }
         }
         else{
-            biggest = findBiggest(q);
-            q->ndist[biggest] = d;
-            q->nidx[biggest] = nd->p;
+            //thelei isws kai edw kapoion elegxo if
+            searchVPT(nd->right,q,X,d);
+
+            //elegxos gia na doume an prepei na pame kai sto allo fullo
+            //sto allo fullo paw an eimaste sto case 3 h an den exei gemisei o pinakas me tous geitones
+            if(q->numOfIndexes<k || q->tau > nd->mu-d){
+                searchVPT(nd->left,q,X,d);
+            }
         }
-    }
 
-    if(d-nd->mu<0.001f && nd->mu!=-INFINITY){
-        searchVPT(nd->left,q,X,d,tau);
     }
-
+    
+    //an eimaste se fullo
     else{
-        if(nd->mu!=-INFINITY){
-            searchVPT(nd->right,q,X,d,tau);
-        }
-    }
 
-    //an eimaste se fyllo
-    if(nd->mu==-INFINITY){
+        //calculate distance of q to these points
         for(int i=0;i<nd->elems;++i){
-            d=0;
-            //calculate distance of q to these points
+            d=0.0;
             for(int j=0;j<d;++j){
                 d += pow(X[nd->indx[i]*d+j]-q->coord[i],2);
             }
-            d =sqrt(d);
-            biggest = findBiggest(q);
-            //brhkame kontinotero geitona
-            if(d-q->ndist[biggest]<-0.001f){
-                q->ndist[biggest] = d;
-                q->nidx[biggest] = nd->indx[i];
-                if(q->numOfIndexes<q->k-1) q->numOfIndexes++; //na to tsekarw auto
+            d = sqrt(d);
+            //see if it's a nearest neighbor
+            if(d-q->tau<-0.001f){
+                //an den exei gemisei o pinakas me tous geitones
+                if(q->numOfIndexes<q->k){
+                    q->ndist[q->numOfIndexes] = d;
+                    q->nidx[q->numOfIndexes] = nd->indx[i];
+                    q->numOfIndexes++;
+                }
+                else{
+                    biggest = findBiggest(q);
+                    q->ndist[biggest] = d;
+                    q->nidx[biggest] = nd->indx[i];
+                }
             }
         }
+        //ypologise to neo tau
+        biggest = findBiggest(q);
+        q->tau = q->ndist[biggest];
+        
     }
-
+    
+    return;
 }
 
 
