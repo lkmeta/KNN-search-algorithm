@@ -582,7 +582,7 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
             currentP->ndist[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
-                currentP->ndist[i + currentP->numOfIndexes] += pow(S[2 * currentNode->p + j] - currentP->coord[j], 2);
+                currentP->ndist[i + currentP->numOfIndexes] += pow(S[currentP->d * currentNode->p + j] - currentP->coord[j], 2);
             }
             currentP->ndist[i + currentP->numOfIndexes] = sqrt(currentP->ndist[i + currentP->numOfIndexes]);
         }
@@ -596,7 +596,7 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
             currentP->ndist[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
-                currentP->ndist[i + currentP->numOfIndexes] += pow(S[2 * currentNode->indx[i] + j] - currentP->coord[j], 2);
+                currentP->ndist[i + currentP->numOfIndexes] += pow(S[currentP->d * currentNode->indx[i] + j] - currentP->coord[j], 2);
             }
             currentP->ndist[i + currentP->numOfIndexes] = sqrt(currentP->ndist[i + currentP->numOfIndexes]);
         }
@@ -699,7 +699,7 @@ queryPoint *searchVPT(Node *root, queryPoint *queryP, double *S)
         // Calculating distance between queryPoint and vp
         for (int i = 0; i < queryP->d; ++i)
         {
-            tempDist += pow(S[2 * root->p + i] - queryP->coord[i], 2);
+            tempDist += pow(S[queryP->d * root->p + i] - queryP->coord[i], 2);
         }
         tempDist = sqrt(tempDist);
 
@@ -749,7 +749,7 @@ int main()
 
     int n = 11;
     int d = 2;
-    int k = 5;
+    int k = 8;
 
     double *X = (double *)malloc(n * d * sizeof(double));
     if (X == NULL)
@@ -852,10 +852,13 @@ int main()
 
         for (int i = 0; i < d; i++)
         {
-            tempCoord[i] = X[i + 2 * j];
+            tempCoord[i] = X[i + d * j];
         }
 
         p->coord = tempCoord;
+        p->nidx=NULL;
+        p->ndist=NULL;
+        p->numOfIndexes=0;
 
         printf("\n\nNEW SEARCH\nSearching point: ");
         printf("x = %lf ", p->coord[0]);
