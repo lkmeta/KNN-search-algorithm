@@ -17,6 +17,7 @@ struct queryPoint
     int k;         //!< Number of nearest neighbors            [scalar]
     int numOfIndexes;
     int flag; //!< 0 if we haven't found yet the nearest neighbors else 1
+    double tau;
 };
 
 struct Node
@@ -654,14 +655,15 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
 
     for (int i = 0; i < length; i++)
     {
-        // elegxos an phra hdh ta k pio kontina
-        if (currentP->k == currentP->numOfIndexes || currentP->flag == 1)
-        {
-            // printf("\nk nearest neighbors are found");
-            // currentP->flag = 1;
-            break;
-        }
-        else if (currentP->k - currentP->numOfIndexes > 0)
+        // // elegxos an phra hdh ta k pio kontina
+        // if (currentP->k == currentP->numOfIndexes || currentP->flag == 1)
+        // {
+        //     printf("\nk nearest neighbors are found");
+        //     //currentP->flag = 1;
+        //     break;
+        // }
+        // else 
+        if (currentP->k - currentP->numOfIndexes > 0)
         {
             currentP->numOfIndexes++;
         }
@@ -675,17 +677,23 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
         pDists = (double *)realloc(pDists, sizeof(double) * (currentP->numOfIndexes));
     }
 
-    // printf("\nfinal Ind = ");
-    // for (int i = 0; i < currentP->numOfIndexes; i++)
-    // {
-    //     printf(" %d ", pIdx[i]);
-    // }
-    // printf("\nfinal Dists = ");
-    // for (int i = 0; i < currentP->numOfIndexes; i++)
-    // {
-    //     printf(" %lf ", pDists[i]);
-    // }
-    // printf("\nnumOfInd = %d ", currentP->numOfIndexes);
+    printf("\nfinal Ind = ");
+    for (int i = 0; i < currentP->numOfIndexes; i++)
+    {
+        printf(" %d ", pIdx[i]);
+    }
+    printf("\nfinal Dists = ");
+    for (int i = 0; i < currentP->numOfIndexes; i++)
+    {
+        printf(" %lf ", pDists[i]);
+    }
+    printf("\nnumOfInd = %d ", currentP->numOfIndexes);
+
+    if(currentP->k == currentP->numOfIndexes)
+    {
+        currentP->tau = pDists[currentP->numOfIndexes - 1];
+    }
+    //printf("\ntau = %lf ", currentP->tau);
 
     currentP->nidx = pIdx;
     currentP->ndist = pDists;
@@ -693,7 +701,7 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S)
 
 queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
 {
-    // printf("... inside searchVPT ...\n");
+    printf("... inside searchVPT ...\n");
 
     Node *currentNode = root;
     if (currentNode == NULL)
@@ -702,7 +710,7 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
         exit(-1);
     }
 
-    // printf("currentNode: p = %d , mu = %lf ", currentNode->p, currentNode->mu);
+    printf("currentNode: p = %d , mu = %lf ", currentNode->p, currentNode->mu);
     // printf("\nnumOfInd: %d ", currentNode->numOfIndexes);
     // printf("\nIND: ");
     // for (int i = 0; i < currentNode->numOfIndexes; i++)
@@ -717,12 +725,20 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
         exit(-1);
     }
 
+    // if(currentP->numOfIndexes == currentP->k && currentP->tau <= currentNode->mu)
+    // {   
+    //     printf("\n\ntelos\n\n");
+    //     return currentP;
+    // }
+
     // Push nearest neighbors in query point
-    addElements(currentNode, currentP, S);
+    // addElements(currentNode, currentP, S);
+    currentP->flag++;
 
     if (currentNode->right == NULL && currentNode->left == NULL)
-    {
-
+    {   
+        // Push nearest neighbors in query point
+        addElements(currentNode, currentP, S);
         return currentP;
     }
     else
@@ -737,33 +753,46 @@ queryPoint *searchVPT(Node *root, queryPoint *p, double *S)
         }
         tempDist = sqrt(tempDist);
 
-        // printf("\ntempDist = %lf ", tempDist);
+        //printf("\ntempDist = %lf ", tempDist);
 
-        // Check for searching left or right here
-        if (tempDist < currentNode->mu)
+        if (tempDist < currentP->tau)
         {
-            // printf("\n\nSearching on left child.\n");
+            // Push nearest neighbors in query point
+            addElements(currentNode, currentP, S);
+
+        }
+
+        if (tempDist < currentNode->mu)
+        {   
+            printf("\n\nSearching on left child.\n");
             currentP = searchVPT(currentNode->left, currentP, S);
 
+            printf("\ntempDist = %lf, mu = %lf, tau = %lf\n", tempDist, currentNode->mu, currentP->tau);
             // Check intersection
-            if (currentP->flag == 0)
-            {
-                // printf("\n\nintersection: Searching on right child.\n");
+            if (currentP->k > currentP->numOfIndexes || tempDist > currentNode->mu - currentP->tau)
+            {   
+                printf("\n\nintersection: Searching on right child.\n");
                 currentP = searchVPT(currentNode->right, currentP, S);
             }
-        }
-        else
-        {
-            // printf("\n\nSearching on right child.\n");
-            currentP = searchVPT(currentNode->right, currentP, S);
 
+        }
+
+        if (tempDist >= currentNode->mu)
+        {   
+            printf("\n\nSearching on right child.\n");
+            currentP = searchVPT(currentNode->right, currentP, S);
+            
+            printf("\ntempDist = %lf, mu = %lf, tau = %lf\n", tempDist, currentNode->mu, currentP->tau);
             // Check intersection
-            if (currentP->flag == 0)
-            {
-                // printf("\n\nintersection: Searching on left child.\n");
+            if (currentP->k > currentP->numOfIndexes || tempDist < currentNode->mu + currentP->tau)
+            {   
+                printf("\n\nintersection: Searching on left child.\n");
                 currentP = searchVPT(currentNode->left, currentP, S);
             }
         }
+
+
+        // }
         // Done with searching VPT
     }
 
@@ -775,6 +804,7 @@ int main()
 
     int n = 11;
     int d = 2;
+    int k = 2;
 
     double *X = (double *)malloc(n * d * sizeof(double));
     if (X == NULL)
@@ -856,6 +886,18 @@ int main()
      * CHANGE HERE THE QUERY POINT AND SEARCH THEN IN THE VPT
     */
     // Search VPT Process
+    // queryPoint *p;
+    // p = malloc(sizeof(queryPoint));
+    // if (p == NULL)
+    // {
+    //     printf("failed to allocate memory for query point\n");
+    //     return 0;
+    // }
+
+    // p->d = d;
+    // p->k = k;
+    // p->tau = INFINITY;
+
     queryPoint *p;
     p = malloc(sizeof(queryPoint));
     if (p == NULL)
@@ -864,19 +906,26 @@ int main()
         return 0;
     }
 
+    p->d = d;
+    p->k = k;
+    p->flag = 0;
+    p->tau = INFINITY;
+
     double *tempCoord = (double *)malloc(d * sizeof(double));
+    if(tempCoord == NULL)
+    {
+        printf("failed to allocate memory for tempCoord\n");
+        return 0;
+    }
+
     for (int i = 0; i < d; i++)
     {   
-
-        tempCoord[i] = X[i + 8];
+        tempCoord[i] = X[i + 2*3];
     }
 
     p->coord = tempCoord;
-    p->d = 2;
-    p->k = 6;
-    p->flag = 0;
 
-    printf("Searching the folowwing query point:\n ");
+    printf("\nSearching the folowwing query point:\n ");
     printf("x = %lf ", p->coord[0]);
     printf(", y = %lf \n", p->coord[1]);
     p = searchVPT(root, p, X);
@@ -893,11 +942,12 @@ int main()
     {
         printf(" %lf ", p->ndist[i]);
     }
-    
-    // TODO: searchVPT seira poy diasxizw to dentro
 
+    printf("\nFLAG = %d ", p->flag);
+
+    free(tempCoord);
+    free(p);
     free(indexes);
     free(root);
-    free(p);
     free(X);
 }
