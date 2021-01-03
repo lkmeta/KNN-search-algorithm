@@ -13,7 +13,7 @@ RM = rm -f
 # TARGETS
 
 
-EXECUTABLES = v1 arxikh v2
+EXECUTABLES = v1 v2_c
 
 all: $(EXECUTABLES)
 
@@ -26,13 +26,13 @@ v0alt: v0alt.c
 v1: v0alt.c v1.c
 	$(MPICC) $(CFLAGS) -o v1 v1.c -lopenblas -lpthread -lm -fopenmp
 
-arxikh: v0alt.c arxikh.c
-	$(MPICC) $(CFLAGS) -o arxikh arxikh.c -lopenblas -lpthread -lm -fopenmp
+#v2: v2.c
+#	$(CC) $< -o $@ -lm 
+	
+v2_:v2.c v2_.c
+	$(MPICC) $(CFLAGS) -o v2_ v2_.c -lm 
 
-v2: v2.c
-	$(CC) $< -o $@ -lm 
-
-test:
+test1:
 	#@printf "\n** Testing v0\n"
 	#./v0
 	#@printf "\n** Testing v0alt with 4 threads by default\n"
@@ -40,13 +40,10 @@ test:
 	@printf "\n** Testing MPI v1 with 3 mpi processes \n"
 	mpirun -np 3 v1
 
-test1:
-	@printf "\n** Testing MPI arxikh with 3 mpi processes \n"
-	mpirun -np 3 arxikh
-
+	
 test2:
-	@printf "\n** Testing v2 \n"
-	./v2
+	@printf "\n** Testing MPI v2 with 3 mpi processes \n"
+	mpirun -np 3 v2_
 
 clean:
 	$(RM) *.o *~ $(EXECUTABLES)
