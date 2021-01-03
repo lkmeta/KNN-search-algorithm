@@ -4,20 +4,24 @@
 #include <time.h>
 #include <string.h>
 
+#define SWAPD(x,y) { double temp = x; x = y; y = temp; }
+#define SWAPI(x,y) { int temp = x; x = y; y =temp; }
+
 typedef struct queryPoint queryPoint;
 typedef struct Node Node;
+typedef struct knnresult knnresult;
 
 // Definition of the query point struct
 struct queryPoint
 {
-    double *coord;      //!< d coords for query point               [1-by-d]
-    int d;              //!< Number of coords
-    int *nidx;          //!< Indices (0-based) of nearest neighbors [m-by-k]
-    double *ndist;      //!< Distance of nearest neighbors          [m-by-k]
-    int k;              //!< Number of nearest neighbors            [scalar]
-    int numOfIndexes;   //!< Counter for Indexes in a queryPoint
-    int flag;           //!< Counter for the visited nodes from the VPT
-    double tau;         //!< Radius for the searchVPT process
+    double *coord;    //!< d coords for query point               [1-by-d]
+    int d;            //!< Number of coords
+    int *nidx;        //!< Indices (0-based) of nearest neighbors [m-by-k]
+    double *ndist;    //!< Distance of nearest neighbors          [m-by-k]
+    int k;            //!< Number of nearest neighbors            [scalar]
+    int numOfIndexes; //!< Counter for Indexes in a queryPoint
+    int flag;         //!< Counter for the visited nodes from the VPT
+    double tau;       //!< Radius for the searchVPT process
 };
 
 struct Node
@@ -30,6 +34,97 @@ struct Node
     int *indx;
     int numOfIndexes;
 };
+
+// Definition of the kNN result struct
+struct knnresult
+{
+    int *nidx;     //!< Indices (0-based) of nearest neighbors [m-by-k]
+    double *ndist; //!< Distance of nearest neighbors          [m-by-k]
+    int m;         //!< Number of query points                 [scalar]
+    int k;         //!< Number of nearest neighbors            [scalar]
+};
+
+//function printing a matrix of doubles
+void printMatrix(double *A, int size)
+{
+    for (int i = 0; i < size; ++i)
+    {
+        printf("%lf ", A[i]);
+    }
+    printf("\n");
+}
+
+//function creating a matrix of doubles with random values
+double createRandomMatrix(double *A, int size)
+{
+    for (int i = 0; i < size; ++i)
+    {
+        A[i] = (rand() % 21);
+    }
+}
+
+// Partition using Lomuto partition scheme
+int partition(double* A, int* B, int left, int right, int pivotIndex)
+{
+    // Pick pivotIndex as pivot from the array
+    double pivot = A[pivotIndex];
+ 
+    // Move pivot to end
+    SWAPD(A[pivotIndex], A[right]);
+    SWAPI(B[pivotIndex], B[right]);
+ 
+    // elements less than pivot will be pushed to the left of pIndex
+    // elements more than pivot will be pushed to the right of pIndex
+    // equal elements can go either way
+    int pIndex = left;
+ 
+    // each time we finds an element less than or equal to pivot, pIndex
+    // is incremented and that element would be placed before the pivot.
+    for (int i = left; i < right; i++)
+    {
+        if (A[i]-pivot<0.001f)
+        {
+            SWAPD(A[i], A[pIndex]);
+            SWAPI(B[i], B[pIndex]);
+            pIndex++;
+        }
+    }
+ 
+    // Move pivot to its final place
+    SWAPD(A[pIndex], A[right]);
+    SWAPI(B[pIndex], B[right]);
+ 
+    // return pIndex (index of pivot element)
+    return pIndex;
+}
+
+// Returns the k-th smallest element of list within left..right
+// (i.e. left <= k <= right). The search space within the array is
+// changing for each round - but the list is still the same size.
+// Thus, k does not need to be updated with each round.
+double quickSelect(double* A, int* B, int left, int right, int k) //change to void later, keep it now for testing
+{
+    // If the array contains only one element, return that element
+    if (left == right)
+        return A[left];
+ 
+    // select a pivotIndex between left and right
+    int pivotIndex = left + rand() % (right - left + 1);
+ 
+    pivotIndex = partition(A, B, left, right, pivotIndex);
+ 
+    // The pivot is in its final sorted position
+    if (k == pivotIndex)
+        return A[k];
+ 
+    // if k is less than the pivot index
+    else if (k < pivotIndex)
+        return quickSelect(A, B, left, pivotIndex - 1, k);
+ 
+    // if k is more than the pivot index
+    else
+        return quickSelect(A, B, pivotIndex + 1, right, k);
+}
 
 /* Function to sort an array using insertion sort*/
 void insertionSort(double *arr, int *indexes, int n)
@@ -744,12 +839,147 @@ queryPoint *searchVPT(Node *root, queryPoint *queryP, double *S)
     return queryP;
 }
 
+knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
+{
+    int YisX;
+
+    if (Y == X)
+        YisX = 1;
+    else
+        YisX = 0;
+
+    int *nidx = (int *)malloc(m * k * sizeof(int));
+
+    if (nidx == NULL)
+    {
+        printf("Error in kNN: Couldn't allocate memory for nidx");
+        exit(-1);
+    }
+
+    double *ndist = (double *)malloc(m * k * sizeof(double));
+
+    if (ndist == NULL)
+    {
+        printf("Error in kNN: Couldn't allocate memory for ndist");
+        exit(-1);
+    }
+
+    int *indexes = (int *)malloc(n * sizeof(int));
+    if (indexes == NULL)
+    {
+        printf("Error in main: Couldn't allocate memory for indexes");
+        exit(-1);
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        indexes[i] = i;
+    }
+
+    int B = 1;
+
+    // create VPT Process
+    Node *root = makeVPT(X, n, d, indexes, B);
+    if (root == NULL)
+    {
+        printf("Error in main: Couldn't allocate memory for root");
+        exit(-1);
+    }
+
+    // printf("VPT has been created.\n");
+
+    // search VPT Process
+
+    queryPoint *p;
+
+    for (int j = 0; j < m; j++)
+    {
+        p = malloc(sizeof(queryPoint));
+        if (p == NULL)
+        {
+            printf("failed to allocate memory for query point\n");
+            exit(-1);
+        }
+
+        p->d = d;
+        p->k = k;
+        p->flag = 0;
+        p->tau = INFINITY;
+
+        double *tempCoord = (double *)malloc(d * sizeof(double));
+        if (tempCoord == NULL)
+        {
+            printf("failed to allocate memory for tempCoord\n");
+            exit(-1);
+        }
+
+        for (int i = 0; i < d; i++)
+        {
+            tempCoord[i] = Y[i + d * j];
+        }
+
+        p->coord = tempCoord;
+        p->nidx = NULL;
+        p->ndist = NULL;
+        p->numOfIndexes = 0;
+
+        // printf("\n\nNEW SEARCH\nSearching point: ");
+        // printf("x = %lf ", p->coord[0]);
+        // printf(", y = %lf \n", p->coord[1]);
+        p = searchVPT(root, p, X);
+
+        //printf("searchVPT Process done.\n");
+        //printf("%d nearest neighbors \nIndices: ", p->k);
+        for (int i = 0; i < p->numOfIndexes; i++)
+        {
+            //printf(" %d ", p->nidx[i]);
+            nidx[j*k+i] = p->nidx[i];
+        }
+
+        //printf("\nDistances: ");
+        for (int i = 0; i < p->numOfIndexes; i++)
+        {
+            //printf(" %lf ", p->ndist[i]);
+            ndist[j*k+i] = p->ndist[i];
+        }
+
+        //printf("\nFLAG = %d ", p->flag);
+
+        // nidx[j] = p->nidx;
+        // ndist[j] = p->ndist;
+
+        free(tempCoord);
+    }
+
+    free(p);
+    free(indexes);
+    free(root);
+
+    // printf("\nNIDX: ");
+    // printMatrix((double)nidx, m*k);
+    //printf("\nNDIST: ");
+    //printMatrix(ndist,m*k);
+
+    //struct to be returned
+    knnresult retVal;
+
+    retVal.k = k;
+    retVal.m = m;
+    retVal.ndist = ndist;
+    retVal.nidx = nidx;
+
+    return retVal;
+}
+
+
+/*
 int main()
 {
 
-    int n = 11;
+    int n = 10;
     int d = 2;
-    int k = 8;
+    int k = 3;
+    int B = 1;
 
     double *X = (double *)malloc(n * d * sizeof(double));
     if (X == NULL)
@@ -778,113 +1008,123 @@ int main()
     X[17] = 5.0;
     X[18] = -1.0;
     X[19] = -2.0;
-    X[20] = -6.0;
-    X[21] = -4.0;
+    // X[20] = -6.0;
+    // X[21] = -4.0;
 
-    int *indexes = (int *)malloc(n * sizeof(int));
-    if (indexes == NULL)
+    knnresult result = kNN(X, X, n, n, d, k);
+
+    printf("\nndist = ");
+    printMatrix(result.ndist, n * k);
+
+    printf("\nnidx = ");
+    for (int i = 0; i < n * k; ++i)
     {
-        printf("Error in main: Couldn't allocate memory for indexes");
-        exit(-1);
+        printf(" %d ", result.nidx[i]);
     }
+    printf("\n");
 
-    for (int i = 0; i < n; ++i)
-    {
-        indexes[i] = i;
-    }
+    // int *indexes = (int *)malloc(n * sizeof(int));
+    // if (indexes == NULL)
+    // {
+    //     printf("Error in main: Couldn't allocate memory for indexes");
+    //     exit(-1);
+    // }
 
-    /*
-    int sampleSize = 5;
-    double* D = (double *)malloc(sampleSize*d*sizeof(double));
-    if(D==NULL){
-        printf("Error in main: Couldn't allocate memory for D");
-        exit(-1);        
-    }
-    int* sampleIndex = sampleSet(X,D,sampleSize,n,d);
-    printf("Finally:\n D=\n");
-    for(int k=0;k<sampleSize*d;++k){
-            printf("%lf ",D[k]);
-        }
-    printf("\n sampleIndex=\n");
-    for(int k=0;k<sampleSize;++k){
-            printf("%d ",sampleIndex[k]);
-        }
-    int vp =selectVP(X,n,d);
-    printf("vp=%d\n",vp);
-    */
+    // for (int i = 0; i < n; ++i)
+    // {
+    //     indexes[i] = i;
+    // }
 
-    int B = 2;
+    // // int sampleSize = 5;
+    // // double* D = (double *)malloc(sampleSize*d*sizeof(double));
+    // // if(D==NULL){
+    // //     printf("Error in main: Couldn't allocate memory for D");
+    // //     exit(-1);
+    // // }
+    // // int* sampleIndex = sampleSet(X,D,sampleSize,n,d);
+    // // printf("Finally:\n D=\n");
+    // // for(int k=0;k<sampleSize*d;++k){
+    // //         printf("%lf ",D[k]);
+    // //     }
+    // // printf("\n sampleIndex=\n");
+    // // for(int k=0;k<sampleSize;++k){
+    // //         printf("%d ",sampleIndex[k]);
+    // //     }
+    // // int vp =selectVP(X,n,d);
+    // // printf("vp=%d\n",vp);
 
-    // create VPT Process
-    Node *root = makeVPT(X, n, d, indexes, B);
-    if (root == NULL)
-    {
-        printf("Error in main: Couldn't allocate memory for root");
-        exit(-1);
-    }
+    // // create VPT Process
+    // Node *root = makeVPT(X, n, d, indexes, B);
+    // if (root == NULL)
+    // {
+    //     printf("Error in main: Couldn't allocate memory for root");
+    //     exit(-1);
+    // }
 
-    printf("VPT has been created.\n");
+    // printf("VPT has been created.\n");
 
-    // search VPT Process
+    // // search VPT Process
 
-    queryPoint *p;
+    // queryPoint *p;
 
-    for (int j = 0; j < n; j++)
-    {
-        p = malloc(sizeof(queryPoint));
-        if (p == NULL)
-        {
-            printf("failed to allocate memory for query point\n");
-            return 0;
-        }
+    // for (int j = 0; j < n; j++)
+    // {
+    //     p = malloc(sizeof(queryPoint));
+    //     if (p == NULL)
+    //     {
+    //         printf("failed to allocate memory for query point\n");
+    //         return 0;
+    //     }
 
-        p->d = d;
-        p->k = k;
-        p->flag = 0;
-        p->tau = INFINITY;
+    //     p->d = d;
+    //     p->k = k;
+    //     p->flag = 0;
+    //     p->tau = INFINITY;
 
-        double *tempCoord = (double *)malloc(d * sizeof(double));
-        if (tempCoord == NULL)
-        {
-            printf("failed to allocate memory for tempCoord\n");
-            return 0;
-        }
+    //     double *tempCoord = (double *)malloc(d * sizeof(double));
+    //     if (tempCoord == NULL)
+    //     {
+    //         printf("failed to allocate memory for tempCoord\n");
+    //         return 0;
+    //     }
 
-        for (int i = 0; i < d; i++)
-        {
-            tempCoord[i] = X[i + d * j];
-        }
+    //     for (int i = 0; i < d; i++)
+    //     {
+    //         tempCoord[i] = X[i + d * j];
+    //     }
 
-        p->coord = tempCoord;
-        p->nidx=NULL;
-        p->ndist=NULL;
-        p->numOfIndexes=0;
+    //     p->coord = tempCoord;
+    //     p->nidx=NULL;
+    //     p->ndist=NULL;
+    //     p->numOfIndexes=0;
 
-        printf("\n\nNEW SEARCH\nSearching point: ");
-        printf("x = %lf ", p->coord[0]);
-        printf(", y = %lf \n", p->coord[1]);
-        p = searchVPT(root, p, X);
+    //     printf("\n\nNEW SEARCH\nSearching point: ");
+    //     printf("x = %lf ", p->coord[0]);
+    //     printf(", y = %lf \n", p->coord[1]);
+    //     p = searchVPT(root, p, X);
 
-        printf("searchVPT Process done.\n");
-        printf("%d nearest neighbors \nIndices: ", p->k);
-        for (int i = 0; i < p->numOfIndexes; i++)
-        {
-            printf(" %d ", p->nidx[i]);
-        }
+    //     printf("searchVPT Process done.\n");
+    //     printf("%d nearest neighbors \nIndices: ", p->k);
+    //     for (int i = 0; i < p->numOfIndexes; i++)
+    //     {
+    //         printf(" %d ", p->nidx[i]);
+    //     }
 
-        printf("\nDistances: ");
-        for (int i = 0; i < p->numOfIndexes; i++)
-        {
-            printf(" %lf ", p->ndist[i]);
-        }
+    //     printf("\nDistances: ");
+    //     for (int i = 0; i < p->numOfIndexes; i++)
+    //     {
+    //         printf(" %lf ", p->ndist[i]);
+    //     }
 
-        printf("\nFLAG = %d ", p->flag);
+    //     printf("\nFLAG = %d ", p->flag);
 
-        free(tempCoord);
-    }
+    //     free(tempCoord);
+    // }
 
-    free(p);
-    free(indexes);
-    free(root);
-    free(X);
+    // free(p);
+    // free(indexes);
+    // free(root);
+    // free(X);
 }
+
+*/
