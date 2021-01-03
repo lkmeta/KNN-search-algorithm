@@ -170,7 +170,7 @@ int partition(double* A, int* B, int left, int right, int pivotIndex)
 *       int* B: A's corresponding matrix in which we apply quickselect
 *       int left: left element of the array we are partitioning
 *       int right: right element of the array we are partitioning
-*       int k: the idex of the element we are looking for (we are searching the k-th smallest element)
+*       int k: the index of the element we are looking for (we are searching the k-th smallest element)
 * Output:
 *       double A[k]: the value of the k-th smallest element of matrix A
 **/
@@ -402,4 +402,61 @@ knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
     retVal.nidx = nidx;
 
     return retVal;
+}
+
+/**
+ * Function that finds the k smallest elements of the two lists. Combines the two lists into one and then applies
+ * k-select to it. Then, we only keep the first k elements of this list which are (due to k-select)
+ * the k smallest ones. The lists actually contain the distances of two different subsets of corpus points from
+ * the query points. By doing this for every subset of corpus points, we eventually examine the whole corpus set
+ * and get the final knn of each query point.
+ * O(m) time complexity.
+ * Input:
+ *      knnresult old: struct containing the first list to be merged (updated list is stored to this one)
+ *      knnresult new:struct containing the second list to be merged
+ *      int m: number of query points
+ *      int k: int k: number of nearest neighbors we are looking for
+ *      int offset: offset of the corpus sub-set points in respect to the original corpus set
+ * Output:
+ *      None
+**/
+void mergeLists(knnresult old, knnresult new, int m, int k, int offset){
+
+    //array containing the elements of both old.ndist and new.ndist arrays combined for a particular query point each time
+    double* ndistComb = (double*)malloc(2*k*sizeof(double));
+    if(ndistComb==NULL){
+        printf("Error in mergeLists: Couldn't allocate memory for ndistComb");
+        exit(-1);    
+    }
+
+    //array containing the elements of both old.nidx and new.nidx arrays combined for a particular query point each time
+    int* nidxComb = (int*)malloc(2*k*sizeof(int));
+    if(nidxComb==NULL){
+        printf("Error in mergeLists: Couldn't allocate memory for nidxComb");
+        exit(-1);    
+    }
+
+    //add the elemements to ndistComb and nidxComb
+    for(int i=0;i<m;++i){
+        for(int j=0;j<k;++j){
+            ndistComb[j] = old.ndist[i*k+j];
+            ndistComb[k+j] = new.ndist[i*k+j];
+            nidxComb[j] = old.nidx[i*k+j];
+            //we have to add offset to the indexes because they are in respect
+            //to the corpus subset of the process an not the whole corpus set
+            nidxComb[k+j] = new.nidx[i*k+j]+offset;
+        }
+
+        //find the k-th smallest element of ndistComb and rearrange ndistComb and nidxComb accordingly
+        quickSelect(ndistComb,nidxComb,0,2*k-1,k-1);
+
+        for(int j=0;j<k;++j){
+            old.ndist[i*k+j] = ndistComb[j];
+            old.nidx[i*k+j] = nidxComb[j];
+        }
+    }
+
+    //deallocate memory
+    free(ndistComb);
+    free(nidxComb);
 }
