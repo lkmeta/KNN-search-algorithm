@@ -1014,6 +1014,8 @@ void mergeLists(knnresult old, knnresult new, int m, int k, int offset)
         double kElem = quickSelect(ndistComb, nidxComb, 0, 2 * k - 1, k - 1); //to kElem tha fugei meta
 
         //        printf("kElem=%lf\n", kElem);
+        
+        insertionSort(ndistComb, nidxComb, k);
 
         for (int j = 0; j < k; ++j)
         {
