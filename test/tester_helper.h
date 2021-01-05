@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
-#include "knn.h"
+#include "../knn.h"
 
 // ============================== ACCESS MACROS
 

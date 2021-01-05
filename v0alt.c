@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-#include "knn.c"     
+    
+#include "test/tester.c" 
 
 int main(int argc, char* argv[])
 {   
@@ -77,6 +77,8 @@ int main(int argc, char* argv[])
         printf("%d ", result.nidx[i]);
     }
     printf("\n");
+
+    checkResult(result,X,X,n,n,d,k);
 
     //deallocate used memory 
     free(X);
