@@ -6,11 +6,20 @@
 #include <time.h>
 #include <limits.h>
 
-#define SWAPD(x,y) { double temp = x; x = y; y = temp; }    //swap two integers
-#define SWAPI(x,y) { int temp = x; x = y; y =temp; }        //swap two doubles     
+#define SWAPD(x, y)      \
+    {                    \
+        double temp = x; \
+        x = y;           \
+        y = temp;        \
+    } //swap two integers
+#define SWAPI(x, y)   \
+    {                 \
+        int temp = x; \
+        x = y;        \
+        y = temp;     \
+    } //swap two doubles
 
-
- // Definition of the kNN result struct
+// Definition of the kNN result struct
 typedef struct knnresult
 {
     int *nidx;     //!< Indices (0-based) of nearest neighbors [m-by-k]
@@ -30,17 +39,21 @@ typedef struct knnresult
 //   \param  k      Number of neighbors             [scalar]
 
 //function printing a matrix of doubles
-void printMatrix(double* A, int size){
-    for(int i=0;i<size;++i){
+void printMatrix(double *A, int size)
+{
+    for (int i = 0; i < size; ++i)
+    {
         printf("%lf ", A[i]);
     }
     printf("\n");
 }
 
 //function creating a matrix of doubles with random values in [-100,100]
-double createRandomMatrix(double* A, int size){
-    for(int i=0;i<size;++i){
-        A[i] = (double)rand()/RAND_MAX*2.0-100.0;
+double createRandomMatrix(double *A, int size)
+{
+    for (int i = 0; i < size; ++i)
+    {
+        A[i] = (double)rand() / RAND_MAX * 2.0 - 100.0;
     }
 }
 
@@ -60,10 +73,10 @@ double createRandomMatrix(double* A, int size){
  * Output:
  *      double* C: the Euclidean distance matrix (actually the D distance matrix)
  **/
-double* distanceMatrix(double *X, double *Y, int n, int m, int d)
+double *distanceMatrix(double *X, double *Y, int n, int m, int d)
 {
     double sumX;
-    double* sumY = (double*)malloc(m*sizeof(double));
+    double *sumY = (double *)malloc(m * sizeof(double));
 
     //for the C=aA*B+b*C formula used in the cblas_dgemm function
     double alpha = 1.0;
@@ -71,36 +84,42 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
 
     //no need to create separate C and D matrixes, we calculate C = X*Y' first and then add to it sumX and sumY
     //in an appropriate way to get the D distance matrix (we save space this way)
-    double *C = (double *)malloc(n*m*sizeof(double));
+    double *C = (double *)malloc(n * m * sizeof(double));
 
-    if(C==NULL){
+    if (C == NULL)
+    {
         printf("Error in distanceMatrix: Couldn't allocate memory for C");
         exit(-1);
     }
 
     //Calculate sumY list
-    for (int i = 0; i < m; i++){
-        sumY[i]=0;
-        for (int j = 0; j < d; j++){
-            sumY[i] += pow(Y[i*d+j], 2);
+    for (int i = 0; i < m; i++)
+    {
+        sumY[i] = 0;
+        for (int j = 0; j < d; j++)
+        {
+            sumY[i] += pow(Y[i * d + j], 2);
         }
     }
 
     //Calculate the corresponding row of the D matrix for each point in the corpus set X
-    for(int i=0;i<n;++i){
+    for (int i = 0; i < n; ++i)
+    {
 
         //calculate sumX for the i-th corpus point each time
-        sumX=0;
-        for(int k=0;k<d;++k){
-            sumX += pow(X[i*d+k],2);
+        sumX = 0;
+        for (int k = 0; k < d; ++k)
+        {
+            sumX += pow(X[i * d + k], 2);
         }
 
         //calculate the i-th row of the matrix C=X*Y'
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 1, m, d, alpha, &X[i*d], d, Y, d, beta, &C[i*m], m);
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 1, m, d, alpha, &X[i * d], d, Y, d, beta, &C[i * m], m);
 
         //calculate the i-th row of the matrix D=(sumX)ee'−2C+ee'(sumY)'
-        for (int j=0;j<m;j++){
-            C[i*m+j] = sqrt(sumX - 2*C[i*m+j] + sumY[j]);
+        for (int j = 0; j < m; j++)
+        {
+            C[i * m + j] = sqrt(sumX - 2 * C[i * m + j] + sumY[j]);
         }
     }
 
@@ -124,39 +143,59 @@ double* distanceMatrix(double *X, double *Y, int n, int m, int d)
 * Output:
 *       int pIndex: index of pivot element on the rearranged matrix
 **/
-int partition(double* A, int* B, int left, int right, int pivotIndex)
+int partition(double *A, int *B, int left, int right, int pivotIndex)
 {
     // Pick pivotIndex as pivot from the array
     double pivot = A[pivotIndex];
- 
+
     // Move pivot to end
     SWAPD(A[pivotIndex], A[right]);
     SWAPI(B[pivotIndex], B[right]);
- 
+
     // elements less than pivot will be pushed to the left of pIndex
     // elements more than pivot will be pushed to the right of pIndex
     // equal elements can go either way
     int pIndex = left;
- 
+
     // each time we finds an element less than or equal to pivot, pIndex
     // is incremented and that element would be placed before the pivot.
     for (int i = left; i < right; i++)
     {
         //we allow for our doubles a tolerance error of 0.001 (not every number can be stored exactly as a binary)
-        if (A[i]-pivot<0.001f)
+        if (A[i] - pivot < 1e-6)
         {
             SWAPD(A[i], A[pIndex]);
             SWAPI(B[i], B[pIndex]);
             pIndex++;
         }
     }
- 
+
     // Move pivot to its final place
     SWAPD(A[pIndex], A[right]);
     SWAPI(B[pIndex], B[right]);
- 
+
     // return pIndex (index of pivot element)
     return pIndex;
+}
+
+/* The main function that implements QuickSort 
+ arr[] --> Array to be sorted, 
+  low  --> Starting index, 
+  high  --> Ending index */
+void quickSort(double* ndist, int* nidx, int left, int right) 
+{ 
+    if (left < right) 
+    {
+        // select a pivotIndex between left and right
+        int pivotIndex = left + rand() % (right - left + 1);
+
+        pivotIndex = partition(ndist, nidx, left, right, pivotIndex); 
+  
+        // Separately sort elements before 
+        // partition and after partition 
+        quickSort(ndist, nidx, left, pivotIndex - 1); 
+        quickSort(ndist, nidx, pivotIndex + 1, right); 
+    } 
 }
 
 /**
@@ -174,25 +213,25 @@ int partition(double* A, int* B, int left, int right, int pivotIndex)
 * Output:
 *       double A[k]: the value of the k-th smallest element of matrix A
 **/
-void quickSelect(double* A, int* B, int left, int right, int k)
+void quickSelect(double *A, int *B, int left, int right, int k)
 {
     // If the array contains only one element, return that element
     if (left == right)
         return;
- 
+
     // select a pivotIndex between left and right
     int pivotIndex = left + rand() % (right - left + 1);
- 
+
     pivotIndex = partition(A, B, left, right, pivotIndex);
- 
+
     // The pivot is in its final sorted position
     if (k == pivotIndex)
         return;
- 
+
     // if k is less than the pivot index
     else if (k < pivotIndex)
         return quickSelect(A, B, left, pivotIndex - 1, k);
- 
+
     // if k is more than the pivot index
     else
         return quickSelect(A, B, pivotIndex + 1, right, k);
@@ -222,24 +261,32 @@ void quickSelect(double* A, int* B, int left, int right, int k)
  * Output:
  *      None
 **/
-void addElems(double* D, int n, int m, int k, int pointNum, int* nidx, double* ndist){
-    int elemCount=0;
-    for(int i=0;i<n;++i){
-        
+void addElems(double *D, int n, int m, int k, int pointNum, int *nidx, double *ndist)
+{
+    int elemCount = 0;
+    for (int i = 0; i < n; ++i)
+    {
+
         //ignore the element if it is same as the query point (distance between the two points is 0)
-        if(D[i*m+pointNum]<0.001f){
-            if(i==n-1)break;
-            else continue;
+/*
+        if (D[i * m + pointNum] < 0.001f)
+        {
+            if (i == n - 1)
+                break;
+            else
+                continue;
         }
-        ndist[pointNum*k+elemCount] = D[i*m+pointNum];
-        nidx[pointNum*k+elemCount] = i;
+*/
+        ndist[pointNum * k + elemCount] = D[i * m + pointNum];
+        nidx[pointNum * k + elemCount] = i;
         elemCount++;
     }
 
     //in the remaining positions put these values so that they can be removed first when new corpus set points arrive
-    for(int i=elemCount;i<k;++i){
-        ndist[pointNum*k+i] = INFINITY;
-        nidx[pointNum*k+i] = INT_MAX;
+    for (int i = elemCount; i < k; ++i)
+    {
+        ndist[pointNum * k + i] = INFINITY;
+        nidx[pointNum * k + i] = INT_MAX;
     }
 }
 
@@ -267,18 +314,23 @@ void addElems(double* D, int n, int m, int k, int pointNum, int* nidx, double* n
  * Output:
  *      None
 **/
-void addElems2(double* A, int* B,int n, int k, int pointNum, double* ndist, int* nidx){
-    int elemCount=0;
-    for(int i=0;i<=k && elemCount<k;++i){
+void addElems2(double *A, int *B, int n, int k, int pointNum, double *ndist, int *nidx)
+{
+    int elemCount = 0;
+    for (int i = 0; i <= k && elemCount < k; ++i)
+    {
 
         //ignore the element if its value is zero (if the query point is compared to itself)
-        if(A[i]<0.001f){
-            if(i==n-1) break;
-            else continue;
+/*        if (A[i] < 0.001f)
+        {
+            if (i == n - 1)
+                break;
+            else
+                continue;
         }
-
-        nidx[pointNum*k+elemCount] = B[i];
-        ndist[pointNum*k+elemCount] = A[i];
+*/
+        nidx[pointNum * k + elemCount] = B[i];
+        ndist[pointNum * k + elemCount] = A[i];
         elemCount++;
     }
 }
@@ -303,44 +355,56 @@ void addElems2(double* A, int* B,int n, int k, int pointNum, double* ndist, int*
 * Output:
 *       None
 **/
-void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndist, int flag){
+void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *ndist, int flag)
+{
 
-    if(k>=n){
-        addElems(D,n,m,k,pointNum,nidx,ndist);
+    if (k >= n)
+    {
+        quickSort(ndist, nidx, 0, n-1);
+        addElems(D, n, m, k, pointNum, nidx, ndist);
     }
-    else{
+    else
+    {
         //we create another subarray because if we apply quickselect in the original the elements change positions
-        double* mPointDistanceMatrix = (double*)malloc(n*sizeof(double));
-        int* mPointIndexMatrix = (int*)malloc(n*sizeof(int));
+        double *mPointDistanceMatrix = (double *)malloc(n * sizeof(double));
+        int *mPointIndexMatrix = (int *)malloc(n * sizeof(int));
 
-        if(mPointDistanceMatrix==NULL){
+        if (mPointDistanceMatrix == NULL)
+        {
             printf("Error in kSelect: Couldn't allocate memory for mPointDistanceMatrix");
             exit(-1);
         }
 
-        if(mPointIndexMatrix==NULL){
+        if (mPointIndexMatrix == NULL)
+        {
             printf("Error in kSelect: Couldn't allocate memory for mPointIndexMatrix");
             exit(-1);
         }
 
         //now mPointDistanceMatrix contains the distances the points of X have from point pointNum of Y
         //now mPointIndexMatrix contains the indexes of the points of X for a specific query point OF y
-        for(int i=0;i<n;++i){
-            mPointDistanceMatrix[i] = D[i*m+pointNum];
+        for (int i = 0; i < n; ++i)
+        {
+            mPointDistanceMatrix[i] = D[i * m + pointNum];
             mPointIndexMatrix[i] = i;
         }
 
         //if X==Y then find k+1 smallest elements because we the same point cannot be considered as a neighbor of itself
-        if(flag==1){
-            quickSelect(mPointDistanceMatrix,mPointIndexMatrix,0,n-1,k);
+        if (flag == 1)
+        {
+            quickSelect(mPointDistanceMatrix, mPointIndexMatrix, 0, n - 1, k);
         }
         //else find the k smallest elements
-        else{
-            quickSelect(mPointDistanceMatrix,mPointIndexMatrix,0,n-1,k-1);
+        else
+        {
+            quickSelect(mPointDistanceMatrix, mPointIndexMatrix, 0, n - 1, k - 1);
         }
 
+        //sort the elements in nondecreasing order
+        quickSort(mPointDistanceMatrix, mPointIndexMatrix,0,k-1);
+
         //create the final ndist and nidx for the query point with index pointNum
-        addElems2(mPointDistanceMatrix,mPointIndexMatrix,n,k,pointNum,ndist,nidx);
+        addElems2(mPointDistanceMatrix, mPointIndexMatrix, n, k, pointNum, ndist, nidx);
 
         free(mPointDistanceMatrix);
         free(mPointIndexMatrix);
@@ -361,34 +425,40 @@ void kSelect(double* D,int pointNum, int n, int m, int k, int* nidx, double* ndi
  * Output:
  *      knnresult retVal: structure containing the info about the knn of each point of Y
 **/
-knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
-    
+knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
+{
+
     int YisX;
 
     //check if X and Y are the same
-    if(Y==X) YisX = 1;
-    else YisX=0;
+    if (Y == X)
+        YisX = 1;
+    else
+        YisX = 0;
 
     //calculate distance matrix
-    double *D = distanceMatrix(X,Y,n,m,d);
+    double *D = distanceMatrix(X, Y, n, m, d);
 
-    int* nidx = (int *)malloc(m * k * sizeof(int));
+    int *nidx = (int *)malloc(m * k * sizeof(int));
 
-    if(nidx==NULL){
+    if (nidx == NULL)
+    {
         printf("Error in kNN: Couldn't allocate memory for nidx");
         exit(-1);
     }
 
-    double* ndist = (double *)malloc(m * k * sizeof(double));
+    double *ndist = (double *)malloc(m * k * sizeof(double));
 
-    if(ndist==NULL){
+    if (ndist == NULL)
+    {
         printf("Error in kNN: Couldn't allocate memory for ndist");
         exit(-1);
     }
 
     //for each point of the query set Y, find its knn
-    for(int i=0;i<m;++i){
-        kSelect(D,i,n,m,k,nidx,ndist,YisX);
+    for (int i = 0; i < m; ++i)
+    {
+        kSelect(D, i, n, m, k, nidx, ndist, YisX);
     }
 
     free(D);
@@ -420,39 +490,45 @@ knnresult kNN(double* X, double* Y, int n, int m, int d, int k){
  * Output:
  *      None
 **/
-void mergeLists(knnresult old, knnresult new, int m, int k, int offset){
+void mergeLists(knnresult old, knnresult new, int m, int k, int offset)
+{
 
     //array containing the elements of both old.ndist and new.ndist arrays combined for a particular query point each time
-    double* ndistComb = (double*)malloc(2*k*sizeof(double));
-    if(ndistComb==NULL){
+    double *ndistComb = (double *)malloc(2 * k * sizeof(double));
+    if (ndistComb == NULL)
+    {
         printf("Error in mergeLists: Couldn't allocate memory for ndistComb");
-        exit(-1);    
+        exit(-1);
     }
 
     //array containing the elements of both old.nidx and new.nidx arrays combined for a particular query point each time
-    int* nidxComb = (int*)malloc(2*k*sizeof(int));
-    if(nidxComb==NULL){
+    int *nidxComb = (int *)malloc(2 * k * sizeof(int));
+    if (nidxComb == NULL)
+    {
         printf("Error in mergeLists: Couldn't allocate memory for nidxComb");
-        exit(-1);    
+        exit(-1);
     }
 
     //add the elemements to ndistComb and nidxComb
-    for(int i=0;i<m;++i){
-        for(int j=0;j<k;++j){
-            ndistComb[j] = old.ndist[i*k+j];
-            ndistComb[k+j] = new.ndist[i*k+j];
-            nidxComb[j] = old.nidx[i*k+j];
+    for (int i = 0; i < m; ++i)
+    {
+        for (int j = 0; j < k; ++j)
+        {
+            ndistComb[j] = old.ndist[i * k + j];
+            ndistComb[k + j] = new.ndist[i * k + j];
+            nidxComb[j] = old.nidx[i * k + j];
             //we have to add offset to the indexes because they are in respect
             //to the corpus subset of the process an not the whole corpus set
-            nidxComb[k+j] = new.nidx[i*k+j]+offset;
+            nidxComb[k + j] = new.nidx[i * k + j] + offset;
         }
 
         //find the k-th smallest element of ndistComb and rearrange ndistComb and nidxComb accordingly
-        quickSelect(ndistComb,nidxComb,0,2*k-1,k-1);
+        quickSelect(ndistComb, nidxComb, 0, 2 * k - 1, k - 1);
 
-        for(int j=0;j<k;++j){
-            old.ndist[i*k+j] = ndistComb[j];
-            old.nidx[i*k+j] = nidxComb[j];
+        for (int j = 0; j < k; ++j)
+        {
+            old.ndist[i * k + j] = ndistComb[j];
+            old.nidx[i * k + j] = nidxComb[j];
         }
     }
 

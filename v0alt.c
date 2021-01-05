@@ -7,7 +7,7 @@
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
-    int n = 11, m = 4, d = 2, k = 2;
+    int n = 11, m = 4, d = 2, k = 3;
 
     srand(time(NULL));
 
