@@ -961,8 +961,8 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
 
     // printf("\nNIDX: ");
     // printMatrix((double)nidx, m*k);
-    //printf("\nNDIST: ");
-    //printMatrix(ndist,m*k);
+    // printf("\nNDIST: ");
+    // printMatrix(ndist,m*k);
 
     //struct to be returned
     knnresult retVal;
@@ -974,5 +974,67 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
 
     return retVal;
 }
+
+//Find the k smallest elements of the two lists
+void mergeLists(knnresult old, knnresult new, int m, int k, int offset)
+{
+
+    double *ndistComb = (double *)malloc(2 * k * sizeof(double));
+    if (ndistComb == NULL)
+    {
+        printf("Error in mergeLists: Couldn't allocate memory for ndistComb");
+        exit(-1);
+    }
+
+    int *nidxComb = (int *)malloc(2 * k * sizeof(int));
+    if (nidxComb == NULL)
+    {
+        printf("Error in mergeLists: Couldn't allocate memory for nidxComb");
+        exit(-1);
+    }
+
+    for (int i = 0; i < m; ++i)
+    {
+        for (int j = 0; j < k; ++j)
+        {
+            ndistComb[j] = old.ndist[i * k + j];
+            ndistComb[k + j] = new.ndist[i * k + j];
+            nidxComb[j] = old.nidx[i * k + j];
+            nidxComb[k + j] = new.nidx[i * k + j] + offset; //giati ta metraei apo to 0 kai den lamvanei ypopsin oti den einai sthn arxh tou d
+        }
+        /*        
+        printf("ndistComb=\n");
+        printMatrix(ndistComb,2*k);
+        printf("nidxComb = \n");
+        for(int j=0;j<2*k;++j){
+            printf("%d ", nidxComb[j]);
+        }
+        printf("\n");
+*/
+        double kElem = quickSelect(ndistComb, nidxComb, 0, 2 * k - 1, k - 1); //to kElem tha fugei meta
+
+        //        printf("kElem=%lf\n", kElem);
+
+        for (int j = 0; j < k; ++j)
+        {
+            old.ndist[i * k + j] = ndistComb[j];
+            old.nidx[i * k + j] = nidxComb[j];
+        }
+    }
+    /*
+    printf("Finally:\n");
+    printf("ndist = \n");
+    printMatrix(old.ndist, m*k);
+    printf("nidx = \n");
+    for(int i=0;i<m*k;++i){
+        printf("%d ", old.nidx[i]);
+    }
+    printf("\n");
+*/
+
+    free(ndistComb);
+    free(nidxComb);
+}
+
 
 #endif
