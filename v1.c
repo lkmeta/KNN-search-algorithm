@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "mpi.h"
-#include "knn.c"
+#include "test/tester.c"
 
 // Compute distributed all-kNN of points in X
 /*
@@ -42,6 +43,32 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 
     MPI_Status stats[2]; //for Isend first, then Irecv
     MPI_Request reqs[2]; //for Isend first, then Irecv
+
+    int *finalIndexes;      //array containing the indexes of the k-NNs for every point of X
+    double *finalDistances; //array containing the distances between every point of X and its k-NNs
+
+    //the struct containing the kNNs of all points will only be at the root process
+    if(rank==0){
+        finalIndexes = (int *)malloc(n * k * sizeof(int));
+        if (finalIndexes == NULL)
+        {
+            printf("Error in distrAllkNN: Couldn't allocate memory for finalIndexes in process %d", rank);
+            exit(-1);
+        }
+
+        finalDistances = (double *)malloc(n * k * sizeof(double));
+        if (finalDistances == NULL)
+        {
+            printf("Error in distrAllkNN: Couldn't allocate memory for finalDistances in process %d", rank);
+            exit(-1);
+        }
+    }
+    else
+    {
+        finalIndexes = NULL;
+        finalDistances = NULL;
+    }
+    
 
     //define the 'neighbors' of each process in the communication ring
     int prev = rank - 1;
@@ -94,8 +121,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     }
 
     //array where we temporarily story the newly arrived data to each process
-    //size set n/numtasks+1 points because we are not able to know whether n/numtasks or n/numtasks +1 points
-    // are about to arrive
+    //size set n/numtasks+1 points because we are not able to know whether n/numtasks or n/numtasks + 1 points
+    //are about to arrive
     double *Z = (double *)malloc((n / numtasks + 1) * d * sizeof(double));
     if (Y == NULL)
     {
@@ -144,7 +171,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //in the first iteration compute the knn of the local points from the local points
             if (i == 0)
             {
-                result = kNN(Y, X, n / numtasks, n / numtasks, d, k);
+                result = kNN(X, X, n / numtasks, n / numtasks, d, k);
             }
 
             //wait for the new points to arrive
@@ -152,6 +179,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
+
+            //wait for the points to be sent
+            MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
 
@@ -172,9 +202,13 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 
             mergeLists(result, newResult, n / numtasks, k, offsets[originRank] / d);
 
-            //wait for the points to be sent
-            MPI_Wait(&reqs[0], &stats[0]);
         }
+
+        //for each point in the local set of points, sort its neighbors based on their distance from it
+        for(int i=0;i<n/numtasks;++i){
+            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        }
+
     }
 
     //if the process contains n/numtasks local points
@@ -209,7 +243,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //additionaly add the offset these elements have in the original X matrix
             if (i == 0)
             {
-                result = kNN(Y, X, n / numtasks, n / numtasks, d, k);
+                result = kNN(X, X, n / numtasks, n / numtasks, d, k);
                 for (int i = 0; i < n / numtasks * k; ++i)
                 {
                     result.nidx[i] += offsets[rank] / d;
@@ -221,6 +255,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
+
+            //wait for the points to be sent
+            MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
 
@@ -240,10 +277,13 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             originRank = (numtasks + stats[1].MPI_SOURCE - i) % numtasks;
 
             mergeLists(result, newResult, n / numtasks, k, offsets[originRank] / d);
-
-            //wait for the points to be sent
-            MPI_Wait(&reqs[0], &stats[0]);
         }
+
+        //for each point in the local set of points, sort its neighbors based on their distance from it
+        for(int i=0;i<n/numtasks;++i){
+            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        }
+
         free(X);
     }
 
@@ -278,7 +318,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //additionaly add the offset these elements have in the original X matrix
             if (i == 0)
             {
-                result = kNN(Y, X, n / numtasks + 1, n / numtasks + 1, d, k);
+                result = kNN(X, X, n / numtasks + 1, n / numtasks + 1, d, k);
                 for (int i = 0; i < (n / numtasks + 1) * k; ++i)
                 {
                     result.nidx[i] += offsets[rank] / d;
@@ -290,6 +330,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
+
+            //wait for the points to be sent
+            MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
 
@@ -309,27 +352,76 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             originRank = (numtasks + stats[1].MPI_SOURCE - i) % numtasks;
 
             mergeLists(result, newResult, n / numtasks + 1, k, offsets[originRank] / d);
-
-            //wait for the points to be sent
-            MPI_Wait(&reqs[0], &stats[0]);
         }
+
+        //for each point in the local set of points, sort its neighbors based on their distance from it
+        for(int i=0;i<n/numtasks;++i){
+            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        }
+
         free(X);
     }
 
-    //for testing, remove later
-    printf("\nIn process %d ndist = \n", rank);
-    printMatrix(result.ndist, sendCounts[rank] * k / d);
-
-    printf("In process %d nidx = \n", rank);
-    for (int i = 0; i < sendCounts[rank] * k / d; ++i)
+    //offsets is now used to define in which position will the ndist and nidx elements of each process go when we'll
+    //gather them in the root process
+    for (int i = 1; i < numtasks; ++i)
     {
-        printf("%d ", result.nidx[i]);
+        if (i <= numtasks - (n % numtasks))
+        {
+            offsets[i] = offsets[i - 1] + n / numtasks * k;
+        }
+        else
+        {
+            offsets[i] = offsets[i - 1] + (n / numtasks + 1) * k;
+        }
     }
-    printf("\n");
+
+    //similarly, sendCounts now defines how many elements of ndist and nidx will be sent from each process
+    //to the root process when we'll gather them together
+    for (int i = 0; i < numtasks; ++i)
+    {
+        if (i < numtasks - (n % numtasks))
+        {
+            sendCounts[i] = (n / numtasks) * k;
+        }
+        else
+        {
+            sendCounts[i] = (n / numtasks + 1) * k;
+        }
+    }
+
+    MPI_Gatherv(result.nidx, sendCounts[rank], MPI_INT, finalIndexes, sendCounts, offsets, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(result.ndist, sendCounts[rank], MPI_DOUBLE, finalDistances, sendCounts, offsets, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (rank == 0)
+    {
+        //deallocate the arrays containing the kNNs of the local points
+        free(result.nidx);
+        free(result.ndist);
+
+        //now the knn struct in the root process contains the kNNs of all elements of X
+        result.nidx = finalIndexes;
+        result.ndist = finalDistances;
+
+        //for testing, remove later
+        printf("\nIn process %d ndist = \n", rank);
+        printMatrix(result.ndist, n*k,k);
+
+        printf("In process %d nidx = \n", rank);
+        for (int i = 0; i < n*k; ++i)
+        {
+            if(i%k==0 && i!=0){
+            printf("\n");
+            }   
+            printf("%d ", result.nidx[i]);
+        }
+        printf("\n");
+    }
 
     free(Y);
     free(Z);
     free(offsets);
+    free(sendCounts);
 
     return result;
 }
@@ -337,7 +429,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 int main(int argc, char *argv[])
 {
 
-    int n = 11, d = 2, k = 3;
+    srand(time(NULL));
+
+    int n = 50, d = 2, k = 4;
 
     double *X = NULL;
 
@@ -364,7 +458,7 @@ int main(int argc, char *argv[])
             printf("Error in main: Couldn't allocate memory for X in process %d", rank);
             exit(-1);
         }
-
+/*
         X[0] = 1.0;
         X[1] = 3.0;
         X[2] = 4.0;
@@ -387,15 +481,32 @@ int main(int argc, char *argv[])
         X[19] = -2.0;
         X[20] = -6.0;
         X[21] = -4.0;
+*/
+        createRandomMatrix(X,n*d);
+        printf("X=\n");
+        printMatrix(X,n*d,d);
 
-        printf("Numtasks = %d\n", numtasks);
+        printf("\nNumtasks = %d\n", numtasks);
     }
 
     processResult = distrAllkNN(X, n, d, k);
+
+    if(rank==0){
+
+        //comfirm the validity of our results using the tester provided
+        checkResult(processResult,X,X,n,n,d,k);
+        
+        free(X);
+    }
+
+    free(processResult.nidx);
+    free(processResult.ndist);
 
     MPI_Finalized(&finalized);
     if (!finalized)
     {
         MPI_Finalize();
     }
+
+    return 0;
 }

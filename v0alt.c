@@ -7,7 +7,7 @@
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
-    int n = 11, m = 4, d = 2, k = 3;
+    int n = 11, m = 4, d = 2, k = 4;
 
     srand(time(NULL));
 
@@ -61,8 +61,8 @@ int main(int argc, char* argv[])
     Y[6] = 2.0;
     Y[7] = -6.0;
 
-    printf("X= \n");
-    printMatrix(X, n*d);
+//    printf("X= \n");
+//    printMatrix(X, n*d);
 
 //    printf("Y= \n");
 //    printMatrix(Y, m*d);
@@ -70,14 +70,18 @@ int main(int argc, char* argv[])
     knnresult result = kNN(X,X,n,n,d,k);
 
     printf("\nndist = \n");
-    printMatrix(result.ndist, n*k);
+    printMatrix(result.ndist, n*k,k);
 
     printf("nidx = \n");
     for(int i=0;i<n*k;++i){
+        if(i%k==0 && i!=0){
+            printf("\n");
+        }
         printf("%d ", result.nidx[i]);
     }
     printf("\n");
 
+    //comfirm the validity of our results using the tester provided
     checkResult(result,X,X,n,n,d,k);
 
     //deallocate used memory 
