@@ -358,7 +358,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         }
 
         //for each point in the local set of points, sort its neighbors based on their distance from it
-        for(int i=0;i<n/numtasks;++i){
+        for(int i=0;i<n/numtasks+1;++i){
             insertionSort(result.ndist + i*k, result.nidx + i*k, k);
         }
         free(newResult.ndist);
