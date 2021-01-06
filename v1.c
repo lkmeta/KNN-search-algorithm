@@ -209,6 +209,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             insertionSort(result.ndist + i*k, result.nidx + i*k, k);
         }
 
+        free(newResult.ndist);
+        free(newResult.nidx);
     }
 
     //if the process contains n/numtasks local points
@@ -283,7 +285,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         for(int i=0;i<n/numtasks;++i){
             insertionSort(result.ndist + i*k, result.nidx + i*k, k);
         }
-
+        free(newResult.ndist);
+        free(newResult.nidx);
         free(X);
     }
 
@@ -358,7 +361,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         for(int i=0;i<n/numtasks;++i){
             insertionSort(result.ndist + i*k, result.nidx + i*k, k);
         }
-
+        free(newResult.ndist);
+        free(newResult.nidx);
         free(X);
     }
 
