@@ -24,7 +24,7 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
     int originRank;
     int originSize;
     Node *root = NULL;  //na dw pws tha kanw free to dentro
-    int B=2;            //na to dw auto
+    int B=4;            //na to dw auto
     int* indexes = NULL;
 
     //auta tha theloun allagh logika meta
@@ -573,6 +573,8 @@ knnresult distrAllkNN(double * X, int n, int d, int k){
     free(Zidx);
     free(Z);
     free(offsets);
+    freeNode(root);
+    free(root);
 
     return result;
 }
@@ -581,7 +583,7 @@ int main(int argc, char* argv[]){
 
     srand(time(NULL));
 
-    int n = 100, d = 2, k = 3;
+    int n = 10000, d = 8, k = 10;
 
     double *X = NULL;
 
@@ -630,9 +632,30 @@ int main(int argc, char* argv[]){
         printf("Numtasks = %d\n", numtasks);
     }
 
+    //Start timer
+    struct timespec init;
+    clock_gettime(CLOCK_MONOTONIC, &init);
+
     processResult = distrAllkNN(X,n,d,k);
 
+    struct timespec last;   
+    clock_gettime(CLOCK_MONOTONIC, &last);
+
+    long ns;
+    uint seconds;
+    if(last.tv_nsec <init.tv_nsec){
+        ns=init.tv_nsec - last.tv_nsec;
+        seconds= last.tv_sec - init.tv_sec -1;
+    }
+
+    if(last.tv_nsec >init.tv_nsec){
+        ns= last.tv_nsec -init.tv_nsec ;
+        seconds= last.tv_sec - init.tv_sec ;
+    }
+
     if(rank==0){
+
+        printf("For V2 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
 
         //comfirm the validity of our results using the tester provided
         checkResult(processResult,X,X,n,n,d,k);
