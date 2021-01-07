@@ -76,6 +76,7 @@ double randfrom(double min, double max)
     return min + (rand() / div);
 }
 
+
 /**
  * Function creating a matrix of doubles with random values in [-100,100].
  * Input:
@@ -91,6 +92,7 @@ void createRandomMatrix(double *A, int size)
         A[i] = randfrom(-100.0, 100.0);
     }
 }
+
 
 /**
  * Function that for a given crpuse set X and query set Y calculates the Euclidean distance matrix D of
@@ -172,6 +174,7 @@ double *distanceMatrix(double *X, double *Y, int n, int m, int d)
     return C;
 }
 
+
 /** 
 * Partition using Lomuto partition scheme
 * We do the partition by applying comparisons to the elements of A but we move the elements of B in the same way
@@ -221,6 +224,7 @@ int partition(double *A, int *B, int left, int right, int pivotIndex)
     return pIndex;
 }
 
+
 /**
  * Function that implements the QuickSort algorithm. The algorithm is applied in the ndist array but the elements
  * of nidx are rearranged in an according way to match those of ndist.
@@ -247,6 +251,7 @@ void quickSort(double* ndist, int* nidx, int left, int right)
         quickSort(ndist, nidx, pivotIndex + 1, right); 
     } 
 }
+
 
 /**
 * Returns the k-th smallest element of list within left..right
@@ -287,6 +292,7 @@ void quickSelect(double *A, int *B, int left, int right, int k)
         return quickSelect(A, B, pivotIndex + 1, right, k);
 }
 
+
 /**
  * Function that finds the knn of a specific point 'pointNum' of Y. Called if k>=n
  * Matrix ndist is arranged in such a way that each of the first k-1 elements of the matrix is smaller than the k-th
@@ -316,17 +322,6 @@ void addElems(double *D, int n, int m, int k, int pointNum, int *nidx, double *n
     int elemCount = 0;
     for (int i = 0; i < n; ++i)
     {
-
-        //ignore the element if it is same as the query point (distance between the two points is 0)
-/*
-        if (D[i * m + pointNum] < 0.001f)
-        {
-            if (i == n - 1)
-                break;
-            else
-                continue;
-        }
-*/
         ndist[pointNum * k + elemCount] = D[i * m + pointNum];
         nidx[pointNum * k + elemCount] = i;
         elemCount++;
@@ -339,6 +334,7 @@ void addElems(double *D, int n, int m, int k, int pointNum, int *nidx, double *n
         nidx[pointNum * k + i] = INT_MAX;
     }
 }
+
 
 /**
  * Function that finds the knn of a specific point 'pointNum' of Y. Called if k<n.
@@ -369,21 +365,12 @@ void addElems2(double *A, int *B, int n, int k, int pointNum, double *ndist, int
     int elemCount = 0;
     for (int i = 0; i <= k && elemCount < k; ++i)
     {
-
-        //ignore the element if its value is zero (if the query point is compared to itself)
-/*        if (A[i] < 0.001f)
-        {
-            if (i == n - 1)
-                break;
-            else
-                continue;
-        }
-*/
         nidx[pointNum * k + elemCount] = B[i];
         ndist[pointNum * k + elemCount] = A[i];
         elemCount++;
     }
 }
+
 
 /**
 * Function that finds the knn of a specific point 'pointNum' of Y.
@@ -461,6 +448,7 @@ void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *nd
     }
 }
 
+
 /**
  * Function that implements the knn algorithm for a given query set Y and corpus set X.
  * At first we check if Y is the same as X, then we calculate the all-to-all distance matrix D
@@ -524,6 +512,7 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
     return retVal;
 }
 
+
 /**
  * Function implementing the insertion sort algorithm.
  * The algorithm is applied in the arr array but the elements of the indexes array
@@ -560,6 +549,7 @@ void insertionSort(double *arr, int *indexes, int n)
         indexes[j + 1] = keyIndex;
     }
 }
+
 
 /**
  * Function that finds the k smallest elements of the two lists. Combines the two lists into one and then applies
