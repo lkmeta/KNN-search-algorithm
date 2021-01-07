@@ -261,7 +261,7 @@ void quickSort(double* ndist, int* nidx, int left, int right)
 *       int right: right element of the array we are partitioning
 *       int k: the index of the element we are looking for (we are searching the k-th smallest element)
 * Output:
-*       double A[k]: the value of the k-th smallest element of matrix A
+*       None
 **/
 void quickSelect(double *A, int *B, int left, int right, int k)
 {
@@ -530,7 +530,7 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
  * are rearranged in an according way to match those of arr.
  * Input:
  *      double* arr: first matrix in which we apply insertion sort.
- *      int* nidx: second matrix in which we apply insertion sort (rearranged the same way as arr) 
+ *      int* indexes: second matrix in which we apply insertion sort (rearranged the same way as arr) 
  *      int n: number of elements
  * Output:
  *      None

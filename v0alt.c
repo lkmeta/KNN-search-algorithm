@@ -7,7 +7,7 @@
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
-    int n = 11, m = 4, d = 2, k = 4;
+    int n = 10000, m = 4, d = 10, k = 10;
 
     srand(time(NULL));
 
@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
     }
 
     //create set X and y
-//    createRandomMatrix(X,n*d);
+    createRandomMatrix(X,n*d);
 //    createRandomMatrix(Y,m*d);
-
+/*
     X[0]=1.0;
     X[1]=3.0;
     X[2]=4.0;
@@ -60,15 +60,36 @@ int main(int argc, char* argv[])
     Y[5] = -4.0;
     Y[6] = 2.0;
     Y[7] = -6.0;
-
+*/
 //    printf("X= \n");
 //    printMatrix(X, n*d);
 
 //    printf("Y= \n");
 //    printMatrix(Y, m*d);
 
+    //Start timer
+    struct timespec init;
+    clock_gettime(CLOCK_MONOTONIC, &init);
+
     knnresult result = kNN(X,X,n,n,d,k);
 
+    //End timer
+    struct timespec last;   
+    clock_gettime(CLOCK_MONOTONIC, &last);
+
+    long ns;
+    uint seconds;
+    if(last.tv_nsec <init.tv_nsec){
+        ns=init.tv_nsec - last.tv_nsec;
+        seconds= last.tv_sec - init.tv_sec -1;
+    }
+
+    if(last.tv_nsec >init.tv_nsec){
+        ns= last.tv_nsec -init.tv_nsec ;
+        seconds= last.tv_sec - init.tv_sec ;
+    }
+    printf("For V0 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
+/*
     printf("\nndist = \n");
     printMatrix(result.ndist, n*k,k);
 
@@ -80,7 +101,7 @@ int main(int argc, char* argv[])
         printf("%d ", result.nidx[i]);
     }
     printf("\n");
-
+*/
     //comfirm the validity of our results using the tester provided
     checkResult(result,X,X,n,n,d,k);
 

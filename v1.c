@@ -406,7 +406,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         //now the knn struct in the root process contains the kNNs of all elements of X
         result.nidx = finalIndexes;
         result.ndist = finalDistances;
-
+/*
         //for testing, remove later
         printf("\nIn process %d ndist = \n", rank);
         printMatrix(result.ndist, n*k,k);
@@ -420,6 +420,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             printf("%d ", result.nidx[i]);
         }
         printf("\n");
+*/
     }
 
     free(Y);
@@ -435,7 +436,7 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
-    int n = 50, d = 2, k = 4;
+    int n = 10000, d = 8, k = 4;
 
     double *X = NULL;
 
@@ -487,15 +488,38 @@ int main(int argc, char *argv[])
         X[21] = -4.0;
 */
         createRandomMatrix(X,n*d);
+/*        
         printf("X=\n");
         printMatrix(X,n*d,d);
 
         printf("\nNumtasks = %d\n", numtasks);
+*/
     }
+    
+    //Start timer
+    struct timespec init;
+    clock_gettime(CLOCK_MONOTONIC, &init);
 
     processResult = distrAllkNN(X, n, d, k);
 
+    struct timespec last;   
+    clock_gettime(CLOCK_MONOTONIC, &last);
+
+    long ns;
+    uint seconds;
+    if(last.tv_nsec <init.tv_nsec){
+        ns=init.tv_nsec - last.tv_nsec;
+        seconds= last.tv_sec - init.tv_sec -1;
+    }
+
+    if(last.tv_nsec >init.tv_nsec){
+        ns= last.tv_nsec -init.tv_nsec ;
+        seconds= last.tv_sec - init.tv_sec ;
+    }
+
     if(rank==0){
+
+        printf("For V1 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
 
         //comfirm the validity of our results using the tester provided
         checkResult(processResult,X,X,n,n,d,k);

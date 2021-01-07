@@ -1,15 +1,19 @@
+#ifndef KNN2_H
+#define KNN2_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
 
-#define SWAPD(x,y) { double temp = x; x = y; y = temp; }
-#define SWAPI(x,y) { int temp = x; x = y; y =temp; }
+#define SWAPD(x,y) { double temp = x; x = y; y = temp; }    //swap two doubles
+#define SWAPI(x,y) { int temp = x; x = y; y =temp; }        //swap two integers
 
 typedef struct queryPoint queryPoint;
 typedef struct Node Node;
 typedef struct knnresult knnresult;
+
 
 // Definition of the query point struct
 struct queryPoint
@@ -24,16 +28,19 @@ struct queryPoint
     double tau;       //!< Radius for the searchVPT process
 };
 
+
+// Definition of the node struct
 struct Node
 {
-    Node *left;
-    Node *right;
-    int p;
-    double mu;
-    double *dists;
-    int *indx;
-    int numOfIndexes;
+    Node *left;         //left child of the node
+    Node *right;        //right child of the node
+    int p;              //index of vantage point
+    double mu;          //median distance
+    double *dists;      //matrix containing the distances of the points of the node from its vantage point
+    int *indx;          //matrix containing the indexes of the points of the node
+    int numOfIndexes;   //number of points contained in the node
 };
+
 
 // Definition of the kNN result struct
 struct knnresult
@@ -43,6 +50,7 @@ struct knnresult
     int m;         //!< Number of query points                 [scalar]
     int k;         //!< Number of nearest neighbors            [scalar]
 };
+
 
 /**
  * Function printing matrix of doubles. Although it is stored as one dimensional array, actually
@@ -67,6 +75,7 @@ void printMatrix(double *A, int size, int lineSize)
     printf("\n");
 }
 
+
 /**
  * Function creating random doubles within a specific range.
  * Input:
@@ -81,6 +90,7 @@ double randfrom(double min, double max)
     double div = RAND_MAX / range;
     return min + (rand() / div);
 }
+
 
 /**
  * Function creating a matrix of doubles with random values in [-100,100].
@@ -98,7 +108,21 @@ void createRandomMatrix(double *A, int size)
     }
 }
 
-// Partition using Lomuto partition scheme
+
+/** 
+* Partition using Lomuto partition scheme
+* We do the partition by applying comparisons to the elements of A but we move the elements of B in the same way
+* so that they are rearranged in correspodence those of A.
+* O(n) complexity
+* Input:
+*       double* A: first matrix in which we apply partition. Its elements are used in the comparisons with the pivot
+*       int* B: second matrix in which we apply partition (rearranged the same way as A)
+*       int left: left element of the array we are partitioning
+*       int right: right element of the array we are partitioning
+*       int pivotIndex: index of the chosen pivot element
+* Output:
+*       int pIndex: index of pivot element on the rearranged matrix
+**/
 int partition(double* A, int* B, int left, int right, int pivotIndex)
 {
      // Pick pivotIndex as pivot from the array
@@ -133,35 +157,60 @@ int partition(double* A, int* B, int left, int right, int pivotIndex)
      return pIndex;
 }
 
-// // Returns the k-th smallest element of list within left..right
-// // (i.e. left <= k <= right). The search space within the array is
-// // changing for each round - but the list is still the same size.
-// // Thus, k does not need to be updated with each round.
- double quickSelect(double* A, int* B, int left, int right, int k) //change to void later, keep it now for testing
- {
-     // If the array contains only one element, return that element
-     if (left == right)
-         return A[left];
+
+/**
+* Returns the k-th smallest element of list within left..right
+* (i.e. left <= k <= right). The search space within the array is
+* changing for each round - but the list is still the same size.
+* Thus, k does not need to be updated with each round.
+* O(logn) complexity
+* Input:
+*       double* A: first matrix in which we apply quickselect
+*       int* B: A's corresponding matrix in which we apply quickselect
+*       int left: left element of the array we are partitioning
+*       int right: right element of the array we are partitioning
+*       int k: the index of the element we are looking for (we are searching the k-th smallest element)
+* Output:
+*       None
+**/
+void quickSelect(double* A, int* B, int left, int right, int k)
+{
+    // If the array contains only one element, return that element
+    if (left == right)
+        return;
  
-     // select a pivotIndex between left and right
-     int pivotIndex = left + rand() % (right - left + 1);
+    // select a pivotIndex between left and right
+    int pivotIndex = left + rand() % (right - left + 1);
  
-     pivotIndex = partition(A, B, left, right, pivotIndex);
+    pivotIndex = partition(A, B, left, right, pivotIndex);
  
-     // The pivot is in its final sorted position
-     if (k == pivotIndex)
-         return A[k];
+    // The pivot is in its final sorted position
+    if (k == pivotIndex)
+        return;
  
-     // if k is less than the pivot index
-     else if (k < pivotIndex)
-         return quickSelect(A, B, left, pivotIndex - 1, k);
+    // if k is less than the pivot index
+    else if (k < pivotIndex)
+        return quickSelect(A, B, left, pivotIndex - 1, k);
  
-     // if k is more than the pivot index
-     else
-         return quickSelect(A, B, pivotIndex + 1, right, k);
+    // if k is more than the pivot index
+    else
+        return quickSelect(A, B, pivotIndex + 1, right, k);
  }
 
-/* Function to sort an array using insertion sort*/
+
+/**
+ * Function implementing the insertion sort algorithm.
+ * The algorithm is applied in the arr array but the elements of the indexes array
+ * are rearranged in an according way to match those of arr.
+ * O(n^2) time complexity but it is more efficient than other sorting algorithms if we deal with a small
+ * number of elements or the elements are almost sorted already
+ * Input:
+ *      double* arr: first matrix in which we apply insertion sort.
+ *      int* indexes: second matrix in which we apply insertion sort (rearranged the same way as arr) 
+ *      int n: number of elements
+ * Output:
+ *      None
+**/
 void insertionSort(double *arr, int *indexes, int n)
 {
     int i, j;
@@ -188,25 +237,33 @@ void insertionSort(double *arr, int *indexes, int n)
     }
 }
 
-//0 an den to vrei, 1 an to vrei
+
+/**
+ * Function checking whether a specific point has been sampled already by checking whether the index
+ * of this point belongs already in the array containing the indexes of the sampled points
+ * Input:
+ *      int* sampleIndex: array containing the indexes of the sampled points (-1 means that this position has not
+ *      been filled with a sampled point yet)
+ *      int sampleSize: total number of points to be sampled
+ *      int index: index of the point that we want to check if it has been sampled
+ * Output:
+ *      int result: 0 if not sampled already, 1 otherwise
+**/
 int sampledAlready(int *sampleIndex, int sampleSize, int index)
 {
     int result = 0;
-    /*
-    printf("sampleIndex=\n");
-    for(int i=0;i<sampleSize;++i){
-        printf("%d ",sampleIndex[i]);
-    }
-*/
+    
     for (int i = 0; i < sampleSize; ++i)
     {
+        //no need to check after that because these positions have not been filled yet
         if (sampleIndex[i] == -1)
         {
             break;
         }
+
+        //if already sampled, stop searching the rest of the sampled points
         if (index == sampleIndex[i])
         {
-            //printf("Found %d it in position %d\n",index,i);
             result = 1;
             break;
         }
@@ -215,10 +272,25 @@ int sampledAlready(int *sampleIndex, int sampleSize, int index)
     return result;
 }
 
+
+/**
+ * Function that creates a sample of points by choosing random points from the whole set of points.
+ * Structured in such a way that all of the randomly selected points are unique.
+ * Input:
+ *      double* X: array containing the coordinates of all the points we can choose from
+ *      double* sample: array containing the coordinates of the sampled points
+ *      int* indexes: array containing the indexes of the points contained in X (because X itself might be a subset
+ *      of the set containing the whole points)
+ *      int sampleSize: number of sample points
+ *      int n: number of points in X
+ *      ind d: number of dimensions
+ * Output:
+ *      int* sampleIndex: indexes of the sampled points in the matrix containing all the points
+**/
 int *sampleSet(double *X, double *sample, int *indexes, int sampleSize, int n, int d)
 {
-    int count = 0;
-    int index;
+    int count = 0;  //counts how mny elements have been sampled already
+    int index;      //randomly chosen index 
 
     int *sampleIndex = (int *)malloc(sampleSize * sizeof(int));
     if (sampleIndex == NULL)
@@ -227,20 +299,19 @@ int *sampleSet(double *X, double *sample, int *indexes, int sampleSize, int n, i
         exit(-1);
     }
 
+    //initialize the index array with -1 to declare that these positions are to be filled
     for (int i = 0; i < sampleSize; ++i)
     {
         sampleIndex[i] = -1;
     }
-    int i = 0;
+
     while (count < sampleSize)
     {
-        //printf("\ni=%d, count=%d\n", i,count);
         index = rand() % n;
-        //printf("index=%d\n", index);
 
+        //if it has not been sampled already, add it to the sampled points
         if (sampledAlready(sampleIndex, sampleSize, indexes[index]) == 0)
         {
-            //printf("Didn't find it\n");
             sampleIndex[count] = indexes[index];
             for (int j = 0; j < d; ++j)
             {
@@ -248,47 +319,38 @@ int *sampleSet(double *X, double *sample, int *indexes, int sampleSize, int n, i
             }
             count++;
         }
-
-        // printf("sampleIndex=\n");
-        // for(int k=0;k<sampleSize;++k){
-        //     printf("%d ",sampleIndex[k]);
-        // }
-        // printf("\n");
-
-        i++;
     }
 
     return sampleIndex;
 }
 
+
+/**
+ * Function that calculates median of a list.
+ * O(nlogn) time complexity.
+ * Input:
+ *      double *sampleDistances: array containing the values out of which we will choose the median distance
+ *      int *indexes: array containing the indexes of the points who produced the distances stored in the
+ *      sampleDistances array
+ *      int sampleSize: number of sampled points
+ * Output:
+ *      double mu: median value
+**/
 double findMedian(double *sampleDistances, int *indexes, int sampleSize)
 {
     double mu;
 
-    // printf("\nbefore insertionSort nd->indx=\n");
-    // for(int i=0;i<sampleSize;++i){
-    //     printf("%d ", indexes[i]);
-    // }
-
     insertionSort(sampleDistances, indexes, sampleSize);
-    /*
-    printf("\nSorted sampleDistances=\n");
-    for(int j=0;j<sampleSize;++j){
-        printf("%lf ",sampleDistances[j]);
-    }
-*/
-
-    // printf("\nafter insertionSort nd->indx=\n");
-    // for(int i=0;i<sampleSize;++i){
-    //     printf("%d ", indexes[i]);
-    // }
 
     int middle = (sampleSize + 1) / 2 - 1;
 
+    //if number of elements is not divisible by two choose the middle point
     if (sampleSize % 2 == 1)
     {
         mu = sampleDistances[middle];
     }
+
+    //otherwise calculate the mean value of the two middle points
     else
     {
         mu = (sampleDistances[middle] + sampleDistances[middle + 1]) / 2;
@@ -297,23 +359,37 @@ double findMedian(double *sampleDistances, int *indexes, int sampleSize)
     return mu;
 }
 
+
+/**
+ * Function that selects the vantage point. First we sample a number of points. Then for each one of these
+ * sampled points, we create a second sample set and calculate the 2nd moment of this point based on the sample
+ * points of the second set. Finally we keep the point of the first sample set that has the biggest 2nd moment.
+ * This point is the most appropriate to become a vantage point since bigger spread (2nd moment) means that it is
+ * more likely of it to be to the edge of the region defined by the points. This method does not ensure that
+ * we always choose the best vantage point but produces better results than picking a random point as the vantage
+ * point without increasing the time complexity too much.
+ * Input:
+ *      double* X: array containing the coordinates of all the points we can choose from
+ *      int* indexes: array containing the indexes of the points contained in X (because X itself might be a subset
+ *      of the set containing the whole points)
+ *      int n: number of points in X
+ *      int d: number of dimensions
+ * Output:
+ *      int bestP: the index of the chosen vantage point in the array containing the whole points
+**/
 int selectVP(double *X, int *indexes, int n, int d)
 {
 
-    // printf("S=\n");
-    // for(int i=0;i<n*d;++i){
-    //     printf("%lf ", X[i]);
-    // }
+    //number of sample points is set to 10
+    int sampleSize = 10;
 
-    int sampleSize = 5; //na dw an yparxei isws allh kalyterh epilogh
-
+    //unless the total number of points is less
     while (sampleSize >= n)
     {
         sampleSize /= 2;
     }
 
-    //    printf("samplesize=%d\n", sampleSize);
-
+    //first set of sampled points
     double *P = (double *)malloc(sampleSize * d * sizeof(double));
     if (P == NULL)
     {
@@ -321,6 +397,7 @@ int selectVP(double *X, int *indexes, int n, int d)
         exit(-1);
     }
 
+    //second set of sampled points
     double *D = (double *)malloc(sampleSize * d * sizeof(double));
     if (D == NULL)
     {
@@ -328,6 +405,7 @@ int selectVP(double *X, int *indexes, int n, int d)
         exit(-1);
     }
 
+    //distances between a specific point of the first sample set and the points of the second sample set
     double *sampleDistances = (double *)malloc(sampleSize * sizeof(double));
     if (sampleDistances == NULL)
     {
@@ -335,28 +413,23 @@ int selectVP(double *X, int *indexes, int n, int d)
         exit(-1);
     }
 
+    //indexes of the of the elements sampled on the first sample set
     int *sampleIndex = sampleSet(X, P, indexes, sampleSize, n, d);
-
-    // printf("\nP=\n");
-    // for(int i=0;i<sampleSize*d;++i){
-    //     printf("%lf ",P[i]);
-    // }
 
     int middle;
     double mu;
     double bestSpread = 0.0;
     double spread;
-    int bestP;
+    int bestP;      //index of the point which is more appropriate to be a vantage point
 
+    //for each point of the first sample set
     for (int i = 0; i < sampleSize; ++i)
     {
-        //        printf("\ni=%d, p=%lf %lf\n",i,P[i*d], P[i*d+1]);
+        //indexes of the of the elements sampled on the second sample set
         int *sampleIndex2 = sampleSet(X, D, indexes, sampleSize, n, d);
-        /*        printf("\nD=\n");
-        for(int j=0;j<sampleSize*d;++j){
-            printf("%lf ", D[j]);
-        }
-*/
+
+        //for each point of the second sample set calculate its distance from the specific point of the first
+        //sample set
         for (int j = 0; j < sampleSize; ++j)
         {
             sampleDistances[j] = 0;
@@ -369,29 +442,26 @@ int selectVP(double *X, int *indexes, int n, int d)
             }
             sampleDistances[j] = sqrt(sampleDistances[j]);
         }
-        /*        printf("\nsampleDistances=\n");
-        for(int j=0;j<sampleSize;++j){
-            printf("%lf ",sampleDistances[j]);
-        }
-*/
+        
         mu = findMedian(sampleDistances, sampleIndex2, sampleSize);
         free(sampleIndex2);
-        //        printf("mu=%lf\n", mu);
+
         spread = 0;
+
+        //calculate the 2nd moment for this point of the first sample set
         for (int j = 0; j < sampleSize; ++j)
         {
             spread += pow(sampleDistances[j] - mu, 2);
         }
         spread /= sampleSize;
-        //        printf("spread=%lf\n",spread);
+        
+        //keep the point with the biggest spread value so far
         if (spread > bestSpread)
         {
             bestSpread = spread;
             bestP = sampleIndex[i];
         }
     }
-
-    //printf("bestspread=%lf, bestP=%d\n",bestSpread,bestP);
 
     free(P);
     free(D);
@@ -401,6 +471,22 @@ int selectVP(double *X, int *indexes, int n, int d)
     return bestP;
 }
 
+
+/**
+ * Function that finds the index of the vantage points on the subset of points used to create a specific subtree
+ * of the whole VPT. The set S of points used as an argument in the function making the VPT is not always the same
+ * as the set X that contains all the points given. That is why it is important to distinguish the difference
+ * between the index of a point in S and the index of a point in X. The value returned from the function that 
+ * chooses the vantage point is the index of this point in X. This function finds the index of this vantage point
+ * in S. This function is useful when we need to calculate distances from the vantage point, where we only have
+ * the S matrix and not the whole x matrix.
+ * Input:
+ *      int vp: the index of the vantage point in the matrix containing all the points of the problem
+ *      int* indexes: the indexes of the points contained in the given sub set of points to create the subtree
+ *      int n: number of points in the subset
+ * Output:
+ *      int VPindex: index of the vantage point in the subset
+**/
 int findVPIndx(int vp, int *indexes, int n)
 {
     int VPindex;
@@ -415,11 +501,30 @@ int findVPIndx(int vp, int *indexes, int n)
     return VPindex;
 }
 
+
+/**
+ * Function that creates the vantage point tree. First, the function checks whether it has to create a leaf or a
+ * non-leaf node. If the node created is a leaf, we simply add all the given points to the leaf and set the index
+ * of the vantage point to be -1 (works as a flag to separate the leafs from non-leaf nodes). If the node created
+ * is not a leaf then we choose an appropriate vantage point, find the median of the points and separate the points
+ * into two categories: those closer to the vantage point than the median that go to the left child and those farther
+ * from the vantage point than the median that go to the right child. Finally, we call makeVPT to create the left
+ * and then the right subtree.
+ * Input:
+ *      double* S: matrix containing the coordinates of the points out of which we are going to create the particular
+ *      node and all of its sub-nodes (if there are any)
+ *      int n: number of corpus set X points
+ *      int d: number of dimensions
+ *      int* indexes: the indexes of the given points on the initial point set containing all the points
+ *      int B: the least number of points each leaf node may contain
+ * Output:
+ *      Node* nd: root of the tree created
+**/
 Node *makeVPT(double *S, int n, int d, int *indexes, int B)
 {
     Node *nd;
 
-    if (n == 0)
+    if (n==0)
     {
         nd = NULL;
         return nd;
@@ -432,6 +537,7 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
         exit(-1);
     }
 
+    //if the points are not enough to be separated into a parent node and two children add them all in one node
     if (n < 2 * B + 1)
     {
         nd->p = -1;
@@ -439,6 +545,12 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
         nd->left = NULL;
         nd->right = NULL;
         nd->dists = (double *)malloc(n * sizeof(double));
+        if (nd->dists == NULL)
+        {
+            printf("Error in makeVPT: Couldn't allocate memory for nd->dists");
+            exit(-1);
+        }
+        
         nd->indx = (int *)malloc(n * sizeof(int));
         if (nd->indx == NULL)
         {
@@ -452,26 +564,14 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
         nd->numOfIndexes = n;
     }
 
+    //otherwise create a arent node and its two children
     else
     {
-        nd->p = selectVP(S, indexes, n, d); //to index tou kalyterou stoixeio ston arxiko pinaka X
+        //find an appropriate vantage point
+        nd->p = selectVP(S, indexes, n, d);
 
-        // printf("\np = %d", nd->p);
-        // printf("\nIndexes= ");
-        // for (int i = 0; i < n; ++i)
-        // {
-        //     printf("%d ", indexes[i]);
-        // }
-        // printf("\n");
-
-        int pInd = findVPIndx(nd->p, indexes, n); //to index tou vp ston pinaka S ths sugkekrimenhs klhshs
-
-        // printf("Index of nd->p=%d\n",pInd);
-        // printf("nd->p=\n");
-        // for(int i=0;i<d;++i){
-        //     printf("%lf ",S[pInd*d+i]);
-        // }
-        // printf("\n");
+        //the vp's index on the S matrix containing the points to create the tree
+        int pInd = findVPIndx(nd->p, indexes, n);
 
         nd->dists = (double *)malloc(n * sizeof(double));
         if (nd->dists == NULL)
@@ -480,6 +580,7 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             exit(-1);
         }
 
+        //calculate the distances of the rest of the points from the vantage point
         for (int i = 0; i < n; ++i)
         {
             nd->dists[i] = 0;
@@ -502,20 +603,12 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
 
         memcpy(nd->indx, indexes, n * sizeof(int));
 
-        // add length of indx array
+        //since it is not a leaf, the node will contain only one point, the vantage point
         nd->numOfIndexes = 1;
 
-        // printf("before median nd->dists=\n");
-        // for(int i=0;i<n;++i){
-        //     printf("%lf ", nd->dists[i]);
-        // }
-
-        // printf("\nbefore median nd->indx=\n");
-        // for(int i=0;i<n;++i){
-        //     printf("%d ", nd->indx[i]);
-        // }
-
-        double *distsTemp = (double *)malloc(n * sizeof(double)); //giati h findMedian xalaei thn seira twn stoixeiwn
+        //we use a temporary array for the distances because calculating the median rearranges the elements in
+        //an unwanted way
+        double *distsTemp = (double *)malloc(n * sizeof(double));
         if (distsTemp == NULL)
         {
             printf("Error in makeVPT: Couldn't allocate memory for distsTemp");
@@ -527,30 +620,20 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
         nd->mu = findMedian(distsTemp, indexes, n);
 
         free(distsTemp);
-        //        free(indexes); //isws na kanei to free auth pou thn pernaei san orisma
 
-        // printf("\nmu=%lf\n",nd->mu);
+        double *right;      //coordinates of the points that will go to the right child
+        int *rightIndexes;  //indexes of the points that will go to the right child
+        
+        double *left;       //coordinates of the points that will go to the left child
+        int *leftIndexes;   //indexes of the points that will go to the left child
 
-        // printf("after median nd->dists=\n");
-        // for(int i=0;i<n;++i){
-        //     printf("%lf ", nd->dists[i]);
-        // }
+        int lSize = 0;      //number of points going to the left child
+        int rSize = 0;      //number of points going to the right child
 
-        // printf("\nafter median nd->indx=\n");
-        // for(int i=0;i<n;++i){
-        //     printf("%d ", nd->indx[i]);
-        // }
-
-        double *right;
-        int *rightIndexes;
-        double *left;
-        int *leftIndexes;
-
-        int lSize = 0;
-        int rSize = 0;
-
+        //check how many points are closer to the vp than the median or farther from it
         for (int i = 0; i < n; ++i)
         {
+            //exclude comparison of vantage point with itself
             if (nd->dists[i] < 1e-7)
             {
                 if (i == n - 1)
@@ -558,6 +641,7 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
                 else
                     continue;
             }
+
             if (nd->dists[i] - nd->mu < 1e-7)
             {
                 lSize++;
@@ -596,13 +680,13 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             exit(-1);
         }
 
-        //printf("lSize=%d, rSize=%d",lSize,rSize);
+        int lCounter = 0;   //counts how many elements have been added to the left child
+        int rCounter = 0;   //counts how many elements have been added to the right child
 
-        int lCounter = 0;
-        int rCounter = 0;
-
+        //separate elements going to the left or the right child
         for (int i = 0; i < n; ++i)
         {
+            //exclude vantage point from being added to one of the children
             if (nd->dists[i] < 1e-7)
             {
                 if (i == n - 1)
@@ -610,8 +694,9 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
                 else
                     continue;
             }
+
             if (nd->dists[i] - nd->mu < 1e-7)
-            { //<=
+            {
                 if (lCounter >= lSize)
                     break;
                 else
@@ -640,79 +725,62 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             }
         }
 
-        // printf("\nleftIndexes=\n");
-        // for(int i=0;i<lSize;++i){
-        //     printf("%d ", leftIndexes[i]);
-        // }
-
-        // printf("\nleft=\n");
-        // for(int i=0;i<lSize*d;++i){
-        //     printf("%lf ", left[i]);
-        // }
-
-        // printf("\nrightIndexes=\n");
-        // for(int i=0;i<rSize;++i){
-        //     printf("%d ", rightIndexes[i]);
-        // }
-
-        // printf("\nright=\n");
-        // for(int i=0;i<rSize*d;++i){
-        //     printf("%lf ", right[i]);
-        // }
-
+        //create the left subtree
         nd->left = makeVPT(left, lSize, d, leftIndexes, B);
+
+        //create the right subtree
         nd->right = makeVPT(right, rSize, d, rightIndexes, B);
+
+        free(right);
+        free(rightIndexes);
+        free(left);
+        free(leftIndexes);
     }
 
     return nd;
 }
 
+
+/**
+ * Function that adds the neighbors from the node into the query point.
+ * First, we add all the neighbors from current node into the query point.
+ * Then we sort the list with the distances. Finally, we reallocate the list 
+ * and we keep the nearest neighbors.
+ * 
+ * Input:
+ *      Node *currentNode    : current node in the tree
+ *      queryPoint *currentP : current query point we are looking for its k nearest neighbors 
+ *      double *S            : nxd matrix containing the corpus data points (n points with d coordinates each)
+ * Output:
+ *      None
+**/
 void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
 {
 
-    // Lists with indexes and dists from cuppent point
-    // currentP->nidx;
-    // currentP->ndist;
-
-    // Check if Node is empty
+    //check if Node is empty
     if (currentNode->numOfIndexes == 0)
     {
-        printf("Error in addElements: No idx.");
+        printf("Error in addElements: No elements.");
         return;
     }
 
     int length = currentNode->numOfIndexes;          // current length
     int newLength = length + currentP->numOfIndexes; // possible next length
 
-    /* PRINT OUT THE INPUTS AND THEIR VALUES WHILE STARTING THE addElements Process */
-    // printf("\nStart addElement Process. ");
-    // printf("\ncurrentNode: p = %d , mu = %lf ", currentNode->p, currentNode->mu);
-    // printf("\nlen = %d ", length);
-    // printf(", numOfIndexes = %d ", (currentP->numOfIndexes));
-    // printf(", NEW LEN = %d ", newLength);
-    // printf("\nBEFORE the addElements Process\nInd = ");
-    // for (int i = 0; i < (currentP->numOfIndexes); i++)
-    // {
-    //     printf(" %d ", currentP->nidx[i]);
-    // }
-    // printf("\nDIST = ");
-    // for (int i = 0; i < (currentP->numOfIndexes); i++)
-    // {
-    //     printf(" %lf ", currentP->ndist[i]);
-    // }
-
+    //reallocate memory because of new possible length
     currentP->nidx = (int *)realloc(currentP->nidx, sizeof(int) * newLength);
     currentP->ndist = (double *)realloc(currentP->ndist, sizeof(double) * newLength);
 
+    //add new indexes and distances from curent node into the query point
     for (int i = 0; i < length; i++)
     {
-        // eimai se node
+        //if the node is not a leaf add the vantage point
         if (currentNode->p != -1)
         {
-            // temporary idx to add
+            //temporary idx to add
             currentP->nidx[i + currentP->numOfIndexes] = currentNode->p;
 
-            // calculate temporary dist to add
+            //calculate temporary dist to add
             currentP->ndist[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
@@ -723,13 +791,14 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
             }
             currentP->ndist[i + currentP->numOfIndexes] = sqrt(currentP->ndist[i + currentP->numOfIndexes]);
         }
-        // eimai se fyllo
+
+        //if the node is a leaf, iclude all the corpus set points of the leaf a neighbors
         else
         {
-            // temporary idx to add
+            //temporary idx to add
             currentP->nidx[i + currentP->numOfIndexes] = currentNode->indx[i];
 
-            // calculate temporary dist to add
+            //calculate temporary dist to add
             currentP->ndist[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
@@ -742,24 +811,13 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
         }
     }
 
+    //sort the new ndist and nidx lists created
     if (newLength != 1)
     {
         insertionSort(currentP->ndist, currentP->nidx, newLength);
     }
 
-    /* PRINT OUT RESULTS AFTER insertionSort */
-    // printf("\nAFTER insertionSort");
-    // printf("\nIDX = ");
-    // for (int i = 0; i < newLength; i++)
-    // {
-    //     printf(" %d ", currentP->nidx[i]);
-    // }
-    // printf("\nDIST = ");
-    // for (int i = 0; i < newLength; i++)
-    // {
-    //     printf(" %lf ", currentP->ndist[i]);
-    // }
-
+    //find the real number of indexes that we will keep
     for (int i = 0; i < length; i++)
     {
         if (currentP->k - currentP->numOfIndexes > 0)
@@ -768,33 +826,38 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
         }
     }
 
+    //reallocate the length of distances and indexes lists according to the number of neighbors we have found
     if (currentP->numOfIndexes != newLength)
     {
         currentP->nidx = (int *)realloc(currentP->nidx, sizeof(int) * (currentP->numOfIndexes));
         currentP->ndist = (double *)realloc(currentP->ndist, sizeof(double) * (currentP->numOfIndexes));
     }
 
+    //update tau to be the distance from the farthest neighbor so far
     if (currentP->k == currentP->numOfIndexes)
     {
         currentP->tau = currentP->ndist[currentP->numOfIndexes - 1];
     }
 
-    /* PRINT OUT THE RESULTS FROM EVERY ADDING ELEMENT PROCESS */
-    // printf("\nNEW NUMOFINDEXES = %d ", currentP->numOfIndexes);
-    // printf("\nfinal Ind = ");
-    // for (int i = 0; i < currentP->numOfIndexes; i++)
-    // {
-    //     printf(" %d ", currentP->nidx[i]);
-    // }
-    // printf("\nfinal Dists = ");
-    // for (int i = 0; i < currentP->numOfIndexes; i++)
-    // {
-    //     printf(" %lf ", currentP->ndist[i]);
-    // }
-    // printf("\nnumOfInd = %d ", currentP->numOfIndexes);
-    // printf("\ntau = %lf ", currentP->tau);
 }
 
+/**
+* Function that searches for the k nearest distances from the query point in the VPT.
+* First, we check if we are searching in a leaf node or not. 
+* When we are in a leaf node we push the nearest neighbors in query point and we return it.
+* When we are not in a leaf node, we check for the following possible cases:
+*   1. if tempdist is lower than the current radius we use addElements
+*   2. if tempdist is lower than the current median we search in left child
+*   3. if tempdist is higher than the current median we search in right child
+* Finally, we check for intersection case of the radius tau and the radius defined by the median
+* of a node and then we return the currentP with all the k nearest neighbors. 
+* Input:
+*       Node *root         : root node of the VPT
+*       queryPoint *queryP : query point for which we are looking the k nearest neighbors 
+*       double *S          : nxd matrix containing the corpus data points (n points with d coordinates each)
+* Output:
+*       None 
+**/
 void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
 {
 
@@ -810,33 +873,23 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
         exit(-1);
     }
 
-    /* PRINT OUT THE INPUTS AND THEIR VALUES WHILE STARTING THE searchVPT Process */
-    // printf("Start searchVPT process. \n");
-    // printf("root: p = %d , mu = %lf ", root->p, root->mu);
-    // printf("\nnumOfInd: %d ", root->numOfIndexes);
-    // printf("\nIND: ");
-    // for (int i = 0; i < root->numOfIndexes; i++)
-    // {
-    //     printf(" %d ", root->indx[i]);
-    // }
-
-    // Increase the counter for the visited nodes
+    //increase the counter for the visited nodes
     queryP->flag++;
 
-    // eimai se fyllo
+    //if the node is a leaf
     if (root->right == NULL && root->left == NULL)
     {
-        // Push nearest neighbors in query point
+        //push nearest neighbors in query point
         addElements(root, queryP, S, offset);
         return;
     }
-    // eimai se node
+    //if the node is not a leaf
     else
     {
 
         double tempDist = 0;
 
-        // Calculating distance between queryPoint and vp
+        //calculating distance between queryPoint and vp
         for (int i = 0; i < queryP->d; ++i)
         {
             tempDist += pow(S[queryP->d * root->p - offset + i] - queryP->coord[i], 2);
@@ -846,47 +899,59 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
             }
         tempDist = sqrt(tempDist);
 
-        // printf("\ntempDist = %lf ", tempDist);
-
+        //if the vantage point is inside the tau radius consider it as a neighbor
         if (tempDist < queryP->tau)
         {
-            // Push nearest neighbors in query point
             addElements(root, queryP, S, offset);
         }
 
+        //if the query point is closer to the points of the left child
         if (tempDist < root->mu)
         {
-            // printf("\n\nSearching on left child.\n");
             searchVPT(root->left, queryP, S, offset);
 
-            // printf("\ntempDist = %lf, mu = %lf, tau = %lf\n", tempDist, root->mu, queryP->tau);
-            // Check intersection
+            //if we haven't found all neighbors or there is an intersection between the median radius and tau radius
+            //check the other child too
             if (queryP->k > queryP->numOfIndexes || tempDist > root->mu - queryP->tau)
             {
-                // printf("\n\nintersection: Searching on right child.\n");
                 searchVPT(root->right, queryP, S, offset);
             }
         }
 
+        //if the query point is closer to the points of the right child
         if (tempDist >= root->mu)
         {
-            // printf("\n\nSearching on right child.\n");
             searchVPT(root->right, queryP, S, offset);
 
-            // printf("\ntempDist = %lf, mu = %lf, tau = %lf\n", tempDist, root->mu, queryP->tau);
-            // Check intersection
+            //if we haven't found all neighbors or there is an intersection between the median radius and tau radius
+            //check the other child too
             if (queryP->k > queryP->numOfIndexes || tempDist < root->mu + queryP->tau)
             {
-                // printf("\n\nintersection: Searching on left child.\n");
                 searchVPT(root->left, queryP, S, offset);
             }
         }
-        // Done with searching VPT
     }
 
     return;
 }
 
+
+/**
+ * Function that implements the knn algorithm for a given query set Y and corpus set X.
+ * For each point in Y we create its queryPoint struct and then we search in the VPT for its k nearest neighbors
+ * Input:
+ *      double* X: nxd matrix containing the corpus data points (n points with d coordinates each)
+ *      double* Y: mxd matrix containing the query data points (m data points with d coordinates each)
+ *      Node* root: pointer of type Node to the root of the VPTree
+ *      int n: number of corpus points
+ *      int m: number of query points
+ *      int d: number of dimensions
+ *      int k: number of nearest neighbors we are looking for
+ *      int offset: offset of the beginning of the local corpus set X in respect to the total corpus set X
+ *      containing all the corpus points
+ * Output:
+ *      knnresult retVal: structure containing the info about the knn of each point of Y
+**/
 knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int offset)
 {
     
@@ -906,8 +971,6 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
         exit(-1);
     }
 
-    // search VPT Process
-
     queryPoint *p = (queryPoint*)malloc(sizeof(queryPoint));
     if (p == NULL)
     {
@@ -922,8 +985,10 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
         exit(-1);
     }
 
+    //for each point of the query set Y, find its knn using searchVPT
     for (int j = 0; j < m; j++)
     {
+        //initialize the parameters of the queryPoint p
         p->d = d;
         p->k = k;
         p->flag = 0;
@@ -939,30 +1004,18 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
         p->ndist = NULL;
         p->numOfIndexes = 0;
 
-        // printf("\n\nNEW SEARCH\nSearching point: ");
-        // printf("x = %lf ", p->coord[0]);
-        // printf(", y = %lf \n", p->coord[1]);
+        //search for its kNN in the local tree
         searchVPT(root, p, X, offset);
 
-        //printf("searchVPT Process done.\n");
-        //printf("%d nearest neighbors \nIndices: ", p->k);
         for (int i = 0; i < p->numOfIndexes; i++)
         {
-            //printf(" %d ", p->nidx[i]);
             nidx[j*k+i] = p->nidx[i];
         }
 
-        //printf("\nDistances: ");
         for (int i = 0; i < p->numOfIndexes; i++)
         {
-            //printf(" %lf ", p->ndist[i]);
             ndist[j*k+i] = p->ndist[i];
         }
-
-        //printf("\nFLAG = %d ", p->flag);
-
-        // nidx[j] = p->nidx;
-        // ndist[j] = p->ndist;
 
     }
 
@@ -970,11 +1023,6 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
     free(p->ndist);
     free(tempCoord);
     free(p);
-
-    // printf("\nNIDX: ");
-    // printMatrix((double)nidx, m*k);
-    //printf("\nNDIST: ");
-    //printMatrix(ndist,m*k);
 
     //struct to be returned
     knnresult retVal;
@@ -987,6 +1035,22 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
     return retVal;
 }
 
+/**
+ * Function that finds the k smallest elements of the two lists. Combines the two lists into one and then applies
+ * k-select to it. Then, we only keep the first k elements of this list which are (due to k-select)
+ * the k smallest ones. The lists actually contain the distances of two different subsets of corpus points from
+ * the query points. By doing this for every subset of corpus points, we eventually examine the whole corpus set
+ * and get the final knn of each query point.
+ * O(m) time complexity.
+ * Input:
+ *      knnresult old: struct containing the first list to be merged (updated list is stored to this one)
+ *      knnresult new:struct containing the second list to be merged
+ *      int m: number of query points
+ *      int k: int k: number of nearest neighbors we are looking for
+ *      int offset: offset of the corpus sub-set points in respect to the original corpus set
+ * Output:
+ *      None
+**/
 void mergeLists(double* ndistOld,int* nidxOld, double* ndistNew, int* nidxNew, int m, int k, int offset)
 {
 
@@ -1033,3 +1097,43 @@ void mergeLists(double* ndistOld,int* nidxOld, double* ndistNew, int* nidxNew, i
     free(ndistComb);
     free(nidxComb);
 }
+
+/**
+ * Function freeing all the memory allocated to create the VPTree. Works in a recursive function, freeing
+ * the allocated memory first from the leafs and then going back up to the root.
+ * Input:
+ *      Node* node: the node which we want to deallocate its memory
+ * Output:
+ *      None
+**/
+void freeNode(Node* node){
+    
+    //if it is not a leaf
+    if(node->numOfIndexes==1){
+
+        //free its left child
+        if(node->left!=NULL){
+            freeNode(node->left);
+            free(node->left);
+        }
+
+        //free its right child
+        if(node->right != NULL){
+            freeNode(node->right);
+            free(node->right);
+        }
+
+        free(node->dists);
+        free(node->indx);
+    }
+
+    //if it is not a leaf
+    if((node->left == NULL) && (node->right == NULL)){
+        free(node->dists);
+        free(node->indx);
+    }
+
+    return;
+}
+
+#endif
