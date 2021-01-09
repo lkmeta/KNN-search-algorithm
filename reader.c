@@ -61,7 +61,7 @@ double* readASCGZ(char* filename, int* n, int* d){
         else
         {   
             currPos++;
-            X[currPos] = doubleValue;
+            X[currPos] = 10*doubleValue;
         }
 
     }

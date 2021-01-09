@@ -583,7 +583,7 @@ int main(int argc, char* argv[]){
 
     srand(time(NULL));
 
-    int n , d, k = 4;
+    int n,d,k;
 
     double *X = NULL;
 
@@ -593,49 +593,32 @@ int main(int argc, char* argv[]){
 
     MPI_Initialized(&initialized);
     if (!initialized){
-        MPI_Init(NULL, NULL);
+        MPI_Init(&argc, &argv);
     }
 
     MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if(rank==0){
-
-        X = readASCGZ("CoocTexture.asc",&n,&d);
-
-/*
-        X = (double *)malloc(n*d*sizeof(double));
-        if(X==NULL){
-            printf("Error in main: Couldn't allocate memory for X in process %d", rank);
-            exit(-1);        
+        if(argc<3){
+            printf("Not enough command line arguments\n");
+            exit(-1);
         }
 
-        createRandomMatrix(X,n*d);
-*/
-/*
-        X[0]=1.0;
-        X[1]=3.0;
-        X[2]=4.0;
-        X[3]=2.0;
-        X[4]=-2.0;
-        X[5]=0.0;
-        X[6]=5.0;
-        X[7]=-1.0;
-        X[8]=7.0;
-        X[9]=-3.0;
-        X[10]=-4.0;
-        X[11]=6.0;
-        X[12]=-8.0;
-        X[13]=1.0;
-        X[14]=3.0;
-        X[15]=4.0;
-        X[16]=-7.0;
-        X[17]=5.0;
-        X[18]=-1.0;
-        X[19]=-2.0;
-*/
-        printf("Numtasks = %d\n", numtasks);
+        char* s=argv[1];
+        uint nameLength = strlen(s);    //length of the name of the file 
+        if((s[nameLength-1]=='c') && (s[nameLength-2]=='s') && (s[nameLength-3]=='a') && (s[nameLength-4]=='.')){
+            printf("Your argument is a .asc file\n");
+            X = readASCGZ(s,&n,&d);
+        }
     }
+
+    //send n,d to each process
+    MPI_Bcast(&n,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&d,1,MPI_INT,0,MPI_COMM_WORLD);
+
+    //define k
+    k=atoi(argv[2]);
 
     //Start timer
     struct timespec init;

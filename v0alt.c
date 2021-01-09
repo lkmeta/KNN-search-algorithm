@@ -1,27 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
     
 #include "test/tester.c" 
 #include "reader.c"
 
 int main(int argc, char* argv[])
 {   
-    //currently change them by hand, will fix later
+    if(argc<3){
+        printf("Not enough command line arguments\n");
+        exit(-1);
+    }
+
     int n;
-    //int m = 4;
     int d;
-    int k = 10;
+    int k;
+
+    double *X = NULL;
+
+    char* s=argv[1];
+    uint nameLength = strlen(s);    //length of the name of the file 
+    if((s[nameLength-1]=='c') && (s[nameLength-2]=='s') && (s[nameLength-3]=='a') && (s[nameLength-4]=='.')){
+        printf("Your argument is a .asc file\n");
+        X = readASCGZ(s,&n,&d);
+    }
+
+    k = atoi(argv[2]);
  
     srand(time(NULL));
 
-    // Allocate memory for X and Y lists
-    double *X = readASCGZ("CoocTexture.asc",&n,&d);
 
     //double* X = (double*)malloc(n*d*sizeof(double));
 
     printf("exited readASCGZ\n");
-    printf("n=%d ,d=%d\n",n,d);
+    printf("n=%d ,d=%d ,k=%d\n",n,d,k);
     //double *Y = (double *)malloc(m * d * sizeof(double));
 
     if(X==NULL){
