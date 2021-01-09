@@ -3,30 +3,39 @@
 #include <time.h>
     
 #include "test/tester.c" 
+#include "reader.c"
 
 int main(int argc, char* argv[])
 {   
     //currently change them by hand, will fix later
-    int n = 10000, m = 4, d = 10, k = 10;
-
+    int n;
+    //int m = 4;
+    int d;
+    int k = 10;
+ 
     srand(time(NULL));
 
     // Allocate memory for X and Y lists
-    double *X = (double *)malloc(n * d * sizeof(double));
-    double *Y = (double *)malloc(m * d * sizeof(double));
+    double *X = readASCGZ("CoocTexture.asc",&n,&d);
+
+    //double* X = (double*)malloc(n*d*sizeof(double));
+
+    printf("exited readASCGZ\n");
+    printf("n=%d ,d=%d\n",n,d);
+    //double *Y = (double *)malloc(m * d * sizeof(double));
 
     if(X==NULL){
         printf("Error in main: Couldn't allocate memory for X");
         exit(-1);
     }
-
+/*
     if(Y==NULL){
         printf("Error in main: Couldn't allocate memory for Y");
         exit(-1);
     }
-
+*/
     //create set X and y
-    createRandomMatrix(X,n*d);
+    //createRandomMatrix(X,n*d);
 //    createRandomMatrix(Y,m*d);
 /*
     X[0]=1.0;
@@ -107,7 +116,7 @@ int main(int argc, char* argv[])
 
     //deallocate used memory 
     free(X);
-    free(Y);
+    //free(Y);
 
     free(result.nidx);
     free(result.ndist);

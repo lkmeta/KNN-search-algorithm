@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "mpi.h"
-//#include "knn2.h"
 #include "test/tester2.c"
+#include "reader.c"
 
 //global for easier use both in main and distrAllkNN
 int numtasks, rank;
@@ -583,7 +583,7 @@ int main(int argc, char* argv[]){
 
     srand(time(NULL));
 
-    int n = 10000, d = 8, k = 10;
+    int n , d, k = 4;
 
     double *X = NULL;
 
@@ -600,6 +600,10 @@ int main(int argc, char* argv[]){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if(rank==0){
+
+        X = readASCGZ("CoocTexture.asc",&n,&d);
+
+/*
         X = (double *)malloc(n*d*sizeof(double));
         if(X==NULL){
             printf("Error in main: Couldn't allocate memory for X in process %d", rank);
@@ -607,6 +611,7 @@ int main(int argc, char* argv[]){
         }
 
         createRandomMatrix(X,n*d);
+*/
 /*
         X[0]=1.0;
         X[1]=3.0;

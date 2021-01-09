@@ -3,6 +3,7 @@
 
 #include "mpi.h"
 #include "test/tester.c"
+#include "reader.c"
 
 // Compute distributed all-kNN of points in X
 /*
@@ -436,7 +437,7 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
-    int n = 10000, d = 8, k = 4;
+    int n, d, k = 4;
 
     double *X = NULL;
 
@@ -456,13 +457,15 @@ int main(int argc, char *argv[])
     //only the root process reads the whole X matrix and then scatters it to all processes
     if (rank == 0)
     {
-
+        X = readASCGZ("CoocTexture.asc",&n,&d);
+/*
         X = (double *)malloc(n * d * sizeof(double));
         if (X == NULL)
         {
             printf("Error in main: Couldn't allocate memory for X in process %d", rank);
             exit(-1);
         }
+*/
 /*
         X[0] = 1.0;
         X[1] = 3.0;
@@ -487,7 +490,7 @@ int main(int argc, char *argv[])
         X[20] = -6.0;
         X[21] = -4.0;
 */
-        createRandomMatrix(X,n*d);
+        //createRandomMatrix(X,n*d);
 /*        
         printf("X=\n");
         printMatrix(X,n*d,d);
