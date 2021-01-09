@@ -79,13 +79,13 @@ void printMatrix(double *A, int size, int lineSize)
 /**
  * Function creating random doubles within a specific range.
  * Input:
- *      double min: minimum value the random number can take
  *      double max: maximum value the random number can take
  * Output:
  *      the random number generated
 **/
-double randfrom(double min, double max) 
+double randfrom(double max) 
 {
+    double min = -max;
     double range = (max - min); 
     double div = RAND_MAX / range;
     return min + (rand() / div);
@@ -93,7 +93,8 @@ double randfrom(double min, double max)
 
 
 /**
- * Function creating a matrix of doubles with random values in [-100,100].
+ * Function creating a matrix of doubles with random values whose range grows bigger depending on the size of the 
+ * matrix.
  * Input:
  *      double* A: the matrix we want to give the random values
  *      int size: number of elements of the matrix
@@ -102,9 +103,21 @@ double randfrom(double min, double max)
 **/
 void createRandomMatrix(double *A, int size)
 {
+    double maxVal;
+
+    if(size<1000){
+        maxVal = 10.0;
+    }
+    else if(size<10000){
+        maxVal = 100.0;
+    }
+    else{
+        maxVal = 200.0;
+    }
+    
     for (int i = 0; i < size; ++i)
     {
-        A[i] = randfrom(-100.0, 100.0);
+        A[i] = randfrom(maxVal);
     }
 }
 

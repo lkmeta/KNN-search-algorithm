@@ -23,7 +23,7 @@ int numtasks, rank;
  * Function that handles how each process receives and sends the data and computes the knn in between
  * communications. At first we send a part of X to each process (in such a way that each process either n/numtasks
  * or n/numtasks+1 elements). We compute the knn for the local points and then the processes participate in a
- * communication ring where the send their local points to thei next process and receive the local points from their
+ * communication ring where the send their local points to their next process and receive the local points from their
  * previous. This is done "numtasks-1" times so that each local points set has passed from every process. Eventually,
  * each process has checked all points from the corpus set and has found the knn of its local points set.
  * Input: 
@@ -121,7 +121,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         exit(-1);
     }
 
-    //array where we temporarily story the newly arrived data to each process
+    //array where we temporarily store the newly arrived data to each process
     //size set n/numtasks+1 points because we are not able to know whether n/numtasks or n/numtasks + 1 points
     //are about to arrive
     double *Z = (double *)malloc((n / numtasks + 1) * d * sizeof(double));
@@ -181,7 +181,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
 
-            //wait for the points to be sent
+            //wait for the previous points to be sent
             MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
@@ -259,7 +259,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
 
-            //wait for the points to be sent
+            //wait for the previous points to be sent
             MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
@@ -335,7 +335,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             //check how many points arrived
             MPI_Get_count(&stats[1], MPI_DOUBLE, &count);
 
-            //wait for the points to be sent
+            //wait for the previous points to be sent
             MPI_Wait(&reqs[0], &stats[0]);
 
             memcpy(Y, Z, count * sizeof(double));
@@ -382,7 +382,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     }
 
     //similarly, sendCounts now defines how many elements of ndist and nidx will be sent from each process
-    //to the root process when we'll gather them together
+    //to the root process where we'll gather them together
     for (int i = 0; i < numtasks; ++i)
     {
         if (i < numtasks - (n % numtasks))
@@ -407,21 +407,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         //now the knn struct in the root process contains the kNNs of all elements of X
         result.nidx = finalIndexes;
         result.ndist = finalDistances;
-/*
-        //for testing, remove later
-        printf("\nIn process %d ndist = \n", rank);
-        printMatrix(result.ndist, n*k,k);
 
-        printf("In process %d nidx = \n", rank);
-        for (int i = 0; i < n*k; ++i)
-        {
-            if(i%k==0 && i!=0){
-            printf("\n");
-            }   
-            printf("%d ", result.nidx[i]);
-        }
-        printf("\n");
-*/
     }
 
     free(Y);
@@ -432,13 +418,15 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     return result;
 }
 
+//Main has either 2 or 3 command line arguments
+//Case of 3: The points are read from a file
+//Argument 1: the filename, Argument 2: value of k
+//Case of 4: The points are created randomly
+//Argument 1: value of n, Argument 2: value of d, Argument 3: value of k
 int main(int argc, char *argv[])
 {
-
-    srand(time(NULL));
-
     int n,d,k;
-
+    
     double *X = NULL;
 
     knnresult processResult;
@@ -462,20 +450,60 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
-        char* s=argv[1];
-        uint nameLength = strlen(s);    //length of the name of the file 
-        if((s[nameLength-1]=='c') && (s[nameLength-2]=='s') && (s[nameLength-3]=='a') && (s[nameLength-4]=='.')){
-            printf("Your argument is a .asc file\n");
-            X = readASCGZ(s,&n,&d);
+        else if(argc==3){
+            char* s=argv[1];
+            uint nameLength = strlen(s);    //length of the name of the file 
+            if((s[nameLength-1]=='c') && (s[nameLength-2]=='s') && (s[nameLength-3]=='a') && (s[nameLength-4]=='.')){
+                printf("Your argument is a .asc file\n");
+                X = readASCGZ(s,&n,&d);
+            }
+            else{
+                printf("Not a .asc file!\n");
+                exit(-1);
+            }
+        }
+
+        else if(argc==4){
+            srand(time(NULL));
+
+            n = atoi(argv[1]);
+            d = atoi(argv[2]);
+            k = atoi(argv[3]);
+
+            X = (double*)malloc(n*d*sizeof(double));
+            if (X == NULL)
+            {
+                printf("Error in main: Couldn't allocate memory for X");
+                exit(-1);
+            }
+
+            createRandomMatrix(X,n*d);
+        }
+
+        else{
+            printf("Too many command line arguments\n");
+            exit(-1);
         }
     }
 
-    //send n,d to each process
-    MPI_Bcast(&n,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&d,1,MPI_INT,0,MPI_COMM_WORLD);
+    if(argc==3){
 
-    //define k
-    k=atoi(argv[2]);
+        //send n,d to each process
+        MPI_Bcast(&n,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast(&d,1,MPI_INT,0,MPI_COMM_WORLD);
+
+        //define k
+        k=atoi(argv[2]);
+    }
+    else if(argc==4){
+
+        //define n,d,k
+        n = atoi(argv[1]);
+        d = atoi(argv[2]);
+        k = atoi(argv[3]);
+    }
+
+    printf("argc=%d, n=%d, d=%d, k=%d\n",argc,n,d,k);
     
     //Start timer
     struct timespec init;
@@ -483,6 +511,7 @@ int main(int argc, char *argv[])
 
     processResult = distrAllkNN(X, n, d, k);
 
+    //End timer
     struct timespec last;   
     clock_gettime(CLOCK_MONOTONIC, &last);
 
