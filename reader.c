@@ -49,6 +49,11 @@ double* readASCGZ(char* filename, int* n, int* d){
     printf("Points are %d\n", nCount);
 
     double* X = (double*)malloc(nCount*dCount*sizeof(double));
+    if (X == NULL)
+    {
+        printf("Error in reader: Couldn't allocate memory for X");
+        exit(-1);
+    }
 
     rewind(stream);
 
