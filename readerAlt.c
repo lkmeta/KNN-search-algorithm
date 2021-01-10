@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+
 double *readCOL(char *filename, int *n, int *d)
 {
 
@@ -167,6 +168,8 @@ double *readMINI(char *filename, int *n, int *d)
 
 double *readTV(char *filename, int *n, int *d)
 {
+    int counter = -1;
+
     FILE *stream = fopen(filename, "r");
     if (stream == NULL)
     {
@@ -203,16 +206,18 @@ double *readTV(char *filename, int *n, int *d)
     double doubleValue;
     int intValue;
 
+    fseek(stream,1,SEEK_SET);
+
     for (int i = 0; i < nCount; i++)
     {
         for (int j = 0; j < dCount; j++)
         {
-            if (fscanf(stream, "%d:%lf", &intValue, &doubleValue) != 2)
+            if (fscanf(stream, "%d:%lf ", &intValue, &doubleValue) != 2)
             {
-                break;
+                continue;
             }
-
-            X[i * dCount + j] = doubleValue;
+            counter++;
+            X[counter] = doubleValue;
         }
         while (1)
         {
@@ -224,6 +229,8 @@ double *readTV(char *filename, int *n, int *d)
     }
 
     fclose(stream);
+
+    printf("counter=%d\n",counter);
 
     *n = nCount;
     *d = dCount;
