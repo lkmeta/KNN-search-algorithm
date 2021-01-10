@@ -108,16 +108,19 @@ void createRandomMatrix(double *A, int size)
 
 
 /**
- * Function that for a given crpuse set X and query set Y calculates the Euclidean distance matrix D of
- * these points. The distance matrix D is calculated using the formula
+ * Function that for a given corpus set X and query set Y calculates the Euclidean distance matrix D of
+ * a specific query point. The distance matrix D is calculated using the formula
  * D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).')
  * X and Y lists are in treated in a row major format
- * In order to save some space we calculate the distance matrix row by row instead of all at once. This way
- * we don't have to compute sumX for all elements at once but one element each time.
+ * We calculate the distance market for one query point at a time instead of all together in order to save memory.
+ * For a big number of points the all-to-all distance matrix grows exponentially and as a result there is not
+ * always enough memory to be allocated for this matrix. If we deal with one query point at a time and compute only the
+ * distances from one point the memory needed is proportional to the number of the corpus set points thus saving
+ * significant amounts of memory.
  * Input:
  *      double* X: nxd matrix containing the corpus data points (n points with d coordinates each)
  *      double* Y: mxd matrix containing the query data points (m data points with d coordinates each)
- *      int n: number of corpus points
+ *      int n: index of a specific query set point
  *      int m: number of query points
  *      int d: number of dimensions
  * Output:
@@ -313,8 +316,7 @@ void quickSelect(double *A, int *B, int left, int right, int k)
  * eventually removed when the new points come in (the distances from the query point will be finite).
  * O(n) complexity
  * Input:
- *      double* D: the all-to-all distance matrix
- *      int n: number of corpus set X points
+ *      double* D: the distance matrix of a specific point
  *      int m: number of query set Y points
  *      int k: number of nearest neighbors we are looking for
  *      int pointNum: index of the query point we are examining
@@ -388,7 +390,7 @@ void addElems2(double *A, int *B, int n, int k, int pointNum, double *ndist, int
 * the indexes of those points in X and set ndist nidx equal to them respectively.
 * O(n) complexity
 * Input:
-*       double* D, the all-to-all distance matrix
+*       double* D, the distance matrix of a specific point
 *       int pointNum: index of the query point we are examining
 *       int n: number of corpus set X points
 *       int m: number of query set Y points
@@ -501,7 +503,8 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
 
     double *D = NULL;
 
-    //for each point of the query set Y, find its knn
+    //for each point of the query set Y, find the distances of the corpus set points from it and keep 
+    //the k smallest (k nearest neighbors)
     for (int i = 0; i < m; ++i)
     {
         D = distanceMatrix(X, Y, i, m, d);
