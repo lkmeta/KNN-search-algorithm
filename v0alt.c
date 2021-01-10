@@ -54,8 +54,6 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
-    printf("argc=%d, n=%d, d=%d, k=%d\n",argc,n,d,k);
-
     //Start timer
     struct timespec init;
     clock_gettime(CLOCK_MONOTONIC, &init);
@@ -77,10 +75,9 @@ int main(int argc, char* argv[])
         ns= last.tv_nsec -init.tv_nsec ;
         seconds= last.tv_sec - init.tv_sec ;
     }
-    printf("For V0 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
-
-    //comfirm the validity of our results using the tester provided
-    //checkResult(result,X,X,n,n,d,k);
+    
+    printf("argc=%d, n = %d, d = %d, k = %d\n", argc, n, d, k);
+    printf("For V0 the seconds elapsed are %u and the nanoseconds are %ld\n", seconds, ns);
 
     //deallocate used memory 
     free(X);
