@@ -2,7 +2,7 @@
 #include <string.h>
 #include "mpi.h"
 #include "test/tester2.c"
-#include "reader.c"
+#include "readerAlt.c"
 
 //global for easier use both in main and distrAllkNN
 int numtasks, rank;
@@ -585,12 +585,34 @@ int main(int argc, char* argv[]){
         }
 
         else if(argc==3){
-            char* s=argv[1];
-            uint nameLength = strlen(s);    //length of the name of the file 
-            if((s[nameLength-1]=='c') && (s[nameLength-2]=='s') && (s[nameLength-3]=='a') && (s[nameLength-4]=='.')){
-                printf("Your argument is a .asc file\n");
-                X = readASCGZ(s,&n,&d);
+            
+            char *s = argv[1];
+            uint nameLength = strlen(s); //length of the name of the file
+
+            if (strstr(s, "Color") != NULL || strstr(s, "Cooc") != NULL || strstr(s, "Layout") != NULL)
+            {
+                printf("Your argument matrix is %s file\n", s);
+                X = readCOL(s, &n, &d);
             }
+
+            else if (strstr(s, "Features") != NULL)
+            {
+                printf("Your argument matrix is %s file\n", s);
+                X = readFEAT(s, &n, &d);
+            }
+
+            else if (strstr(s, "Mini") != NULL)
+            {
+                printf("Your argument matrix is %s file\n", s);
+                X = readMINI(s, &n, &d);
+            }
+
+            else if (strstr(s, "BBC") != NULL || strstr(s, "CNN.") != NULL || strstr(s, "CNNI") != NULL || strstr(s, "NDT") != NULL || strstr(s, "TIME") != NULL)
+            {
+                printf("Your argument matrix is %s file\n", s);
+                X = readTV(s, &n, &d);
+            }
+
             else{
                 printf("Not a .asc file!\n");
                 exit(-1);
@@ -662,10 +684,8 @@ int main(int argc, char* argv[]){
 
     if(rank==0){
 
-        printf("For V2 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
-
-        //comfirm the validity of our results using the tester provided
-        checkResult(processResult,X,X,n,n,d,k);
+        printf("argc=%d, n = %d, d = %d, k = %d, numoftasks = %d\n", argc, n, d, k, numtasks);
+        printf("For V2 the seconds elapsed are %u and the nanoseconds are %ld\n", seconds, ns);
         
         free(X);
     }

@@ -529,7 +529,8 @@ int main(int argc, char *argv[])
 
     if(rank==0){
 
-        printf("For V1 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
+        printf("argc=%d, n = %d, d = %d, k = %d, numoftasks = %d\n", argc, n, d, k, numtasks);
+        printf("For V1 the seconds elapsed are %u and the nanoseconds are %ld\n", seconds, ns);
         
         free(X);
     }
