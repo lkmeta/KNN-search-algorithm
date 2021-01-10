@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     printf("For V0 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
 
     //comfirm the validity of our results using the tester provided
-    checkResult(result,X,X,n,n,d,k);
+    //checkResult(result,X,X,n,n,d,k);
 
     //deallocate used memory 
     free(X);

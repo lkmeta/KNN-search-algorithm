@@ -123,7 +123,7 @@ void createRandomMatrix(double *A, int size)
  * Output:
  *      double* C: the Euclidean distance matrix (actually the D distance matrix)
  **/
-double *distanceMatrix(double *X, double *Y, int n, int m, int d)
+double *distanceMatrix(double *X, double *Y, int i, int m, int d)
 {   
     double dsquared;    //the square of the distance between two points
 
@@ -136,7 +136,7 @@ double *distanceMatrix(double *X, double *Y, int n, int m, int d)
 
     //no need to create separate C and D matrixes, we calculate C = X*Y' first and then add to it sumX and sumY
     //in an appropriate way to get the D distance matrix (we save space this way)
-    double *C = (double *)malloc(n * m * sizeof(double));
+    double *C = (double *)malloc(m * sizeof(double));
 
     if (C == NULL)
     {
@@ -145,40 +145,35 @@ double *distanceMatrix(double *X, double *Y, int n, int m, int d)
     }
 
     //Calculate sumY list
-    for (int i = 0; i < m; i++)
+    for (int j = 0; j < m; j++)
     {
-        sumY[i] = 0;
-        for (int j = 0; j < d; j++)
+        sumY[j] = 0;
+        for (int k = 0; k < d; k++)
         {
-            sumY[i] += pow(Y[i * d + j], 2);
+            sumY[j] += pow(Y[j*d + k], 2);
         }
     }
 
-    //Calculate the corresponding row of the D matrix for each point in the corpus set X
-    for (int i = 0; i < n; ++i)
+    //calculate sumX for the i-th corpus point each time
+    sumX = 0;
+    for (int k = 0; k < d; ++k)
     {
+        sumX += pow(X[i * d + k], 2);
+    }
 
-        //calculate sumX for the i-th corpus point each time
-        sumX = 0;
-        for (int k = 0; k < d; ++k)
-        {
-            sumX += pow(X[i * d + k], 2);
+    //calculate the i-th row of the matrix C=X*Y'
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 1, m, d, alpha, &X[i * d], d, Y, d, beta, C, m);
+
+    //calculate the i-th row of the matrix D=(sumX)ee'−2C+ee'(sumY)'
+    for (int j = 0; j < m; j++)
+    {
+        dsquared = sumX - 2 * C[j] + sumY[j];
+        //due to rounding errors because of the way doubles are stored, distances slightly bigger or smaller
+        //than 0 are rounded to 0
+        if(dsquared<1e-5){
+            dsquared =0;
         }
-
-        //calculate the i-th row of the matrix C=X*Y'
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 1, m, d, alpha, &X[i * d], d, Y, d, beta, &C[i * m], m);
-
-        //calculate the i-th row of the matrix D=(sumX)ee'−2C+ee'(sumY)'
-        for (int j = 0; j < m; j++)
-        {
-            dsquared = sumX - 2 * C[i * m + j] + sumY[j];
-            //due to rounding errors because of the way doubles are stored, distances slightly bigger or smaller
-            //than 0 are rounded to 0
-            if(dsquared<1e-5){
-                dsquared =0;
-            }
-            C[i * m + j] = sqrt(dsquared);
-        }
+        C[j] = sqrt(dsquared);
     }
 
     //deallocate used memory
@@ -330,21 +325,22 @@ void quickSelect(double *A, int *B, int left, int right, int k)
  * Output:
  *      None
 **/
-void addElems(double *D, int n, int m, int k, int pointNum, int *nidx, double *ndist)
+void addElems(double *D, int m, int k, int pointNum, int *nidx, double *ndist)
 {
     int elemCount = 0;
-    for (int i = 0; i < n; ++i)
+
+    for (int i = 0; i < m; ++i)
     {
-        ndist[pointNum * k + elemCount] = D[i * m + pointNum];
-        nidx[pointNum * k + elemCount] = i;
+        ndist[pointNum*k + elemCount] = D[i];
+        nidx[pointNum*k + elemCount] = i;
         elemCount++;
     }
 
     //in the remaining positions put these values so that they can be removed first when new corpus set points arrive
     for (int i = elemCount; i < k; ++i)
     {
-        ndist[pointNum * k + i] = INFINITY;
-        nidx[pointNum * k + i] = INT_MAX;
+        ndist[pointNum*k + i] = INFINITY;
+        nidx[pointNum*k + i] = INT_MAX;
     }
 }
 
@@ -408,16 +404,16 @@ void addElems2(double *A, int *B, int n, int k, int pointNum, double *ndist, int
 void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *ndist, int flag)
 {
 
-    if (k >= n)
+    if (k >= m)
     {
-        quickSort(ndist, nidx, 0, n-1);
-        addElems(D, n, m, k, pointNum, nidx, ndist);
+        addElems(D,m, k, pointNum, nidx, ndist);
+        quickSort(ndist, nidx, 0, m-1);
     }
     else
     {
         //we create another subarray because if we apply quickselect in the original the elements change positions
-        double *mPointDistanceMatrix = (double *)malloc(n * sizeof(double));
-        int *mPointIndexMatrix = (int *)malloc(n * sizeof(int));
+        double *mPointDistanceMatrix = (double *)malloc(m * sizeof(double));
+        int *mPointIndexMatrix = (int *)malloc(m * sizeof(int));
 
         if (mPointDistanceMatrix == NULL)
         {
@@ -433,9 +429,9 @@ void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *nd
 
         //now mPointDistanceMatrix contains the distances the points of X have from point pointNum of Y
         //now mPointIndexMatrix contains the indexes of the points of X for a specific query point OF y
-        for (int i = 0; i < n; ++i)
+        for (int i = 0; i < m; ++i)
         {
-            mPointDistanceMatrix[i] = D[i * m + pointNum];
+            mPointDistanceMatrix[i] = D[i];
             mPointIndexMatrix[i] = i;
         }
 
@@ -487,9 +483,6 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
     else
         YisX = 0;
 
-    //calculate distance matrix
-    double *D = distanceMatrix(X, Y, n, m, d);
-
     int *nidx = (int *)malloc(m * k * sizeof(int));
 
     if (nidx == NULL)
@@ -506,13 +499,16 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
         exit(-1);
     }
 
+    double *D = NULL;
+
     //for each point of the query set Y, find its knn
     for (int i = 0; i < m; ++i)
     {
+        D = distanceMatrix(X, Y, i, m, d);
         kSelect(D, i, n, m, k, nidx, ndist, YisX);
-    }
 
-    free(D);
+        free(D);
+    }
 
     //struct to be returned
     knnresult retVal;

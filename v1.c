@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
         printf("For V1 the seconds elapsed are %u and the nanoseconds are %ld\n",seconds, ns);
 
         //comfirm the validity of our results using the tester provided
-        checkResult(processResult,X,X,n,n,d,k);
+        //checkResult(processResult,X,X,n,n,d,k);
         
         free(X);
     }
