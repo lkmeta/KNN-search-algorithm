@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+
 double *readCOL(char *filename, int *n, int *d)
 {
 
