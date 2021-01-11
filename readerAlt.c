@@ -147,18 +147,14 @@ double *readMINI(char *filename, int *n, int *d)
 
     while (fscanf(stream, "%lf ", &doubleValue) == 1)
     {
-        if (floorf(doubleValue) == ceilf(doubleValue) && floorf(doubleValue) != 0)
-        {
-            continue;
-        }
-        else
-        {
-            currPos++;
-            X[currPos] = doubleValue;
-        }
+        currPos++;
+        X[currPos] = doubleValue;
+        
     }
 
     fclose(stream);
+
+    printf("currPos=%d\n",currPos);
 
     *n = nCount;
     *d = dCount;
