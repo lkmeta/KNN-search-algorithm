@@ -22,7 +22,7 @@ v0: v0.c
 	$(CC) $< -o $@ -lopenblas -lpthread -lm -fopenmp
 
 v1: v1.c
-	$(MPICC) $(CFLAGS) -o v1 v1.c -lopenblas -lpthread -lm -fopenmp
+	$(MPICC) $(CFLAGS) -o v1 v1.c -lpthread -lm -lopenblas
 	
 v2: v2.c
 	$(MPICC) $(CFLAGS) -o v2 v2.c -lm 
