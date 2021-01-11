@@ -53,7 +53,8 @@ void printMatrix(double *A, int size, int lineSize)
 {
     for (int i = 0; i < size; ++i)
     {
-        if(i%lineSize==0 && i!=0){
+        if (i % lineSize == 0 && i != 0)
+        {
             printf("\n");
         }
         printf("%lf ", A[i]);
@@ -68,14 +69,13 @@ void printMatrix(double *A, int size, int lineSize)
  * Output:
  *      the random number generated
 **/
-double randfrom(double max) 
+double randfrom(double max)
 {
     double min = -max;
-    double range = (max - min); 
+    double range = (max - min);
     double div = RAND_MAX / range;
     return min + (rand() / div);
 }
-
 
 /**
  * Function creating a matrix of doubles with random values whose range grows bigger depending on the size of the 
@@ -90,22 +90,24 @@ void createRandomMatrix(double *A, int size)
 {
     double maxVal;
 
-    if(size<1000){
+    if (size < 1000)
+    {
         maxVal = 10.0;
     }
-    else if(size<10000){
+    else if (size < 10000)
+    {
         maxVal = 100.0;
     }
-    else{
+    else
+    {
         maxVal = 200.0;
     }
-    
+
     for (int i = 0; i < size; ++i)
     {
         A[i] = randfrom(maxVal);
     }
 }
-
 
 /**
  * Function that for a given corpus set X and query set Y calculates the Euclidean distance matrix D of
@@ -127,8 +129,8 @@ void createRandomMatrix(double *A, int size)
  *      double* C: the Euclidean distance matrix (actually the D distance matrix)
  **/
 double *distanceMatrix(double *X, double *Y, int i, int m, int d)
-{   
-    double dsquared;    //the square of the distance between two points
+{
+    double dsquared; //the square of the distance between two points
 
     double sumX;
     double *sumY = (double *)malloc(m * sizeof(double));
@@ -153,7 +155,7 @@ double *distanceMatrix(double *X, double *Y, int i, int m, int d)
         sumY[j] = 0;
         for (int k = 0; k < d; k++)
         {
-            sumY[j] += pow(Y[j*d + k], 2);
+            sumY[j] += pow(Y[j * d + k], 2);
         }
     }
 
@@ -173,8 +175,9 @@ double *distanceMatrix(double *X, double *Y, int i, int m, int d)
         dsquared = sumX - 2 * C[j] + sumY[j];
         //due to rounding errors because of the way doubles are stored, distances slightly bigger or smaller
         //than 0 are rounded to 0
-        if(dsquared<1e-5){
-            dsquared =0;
+        if (dsquared < 1e-5)
+        {
+            dsquared = 0;
         }
         C[j] = sqrt(dsquared);
     }
@@ -184,7 +187,6 @@ double *distanceMatrix(double *X, double *Y, int i, int m, int d)
 
     return C;
 }
-
 
 /** 
 * Partition using Lomuto partition scheme
@@ -235,7 +237,6 @@ int partition(double *A, int *B, int left, int right, int pivotIndex)
     return pIndex;
 }
 
-
 /**
  * Function that implements the QuickSort algorithm. The algorithm is applied in the ndist array but the elements
  * of nidx are rearranged in an according way to match those of ndist.
@@ -247,22 +248,21 @@ int partition(double *A, int *B, int left, int right, int pivotIndex)
  * Output:
  *      None
 **/
-void quickSort(double* ndist, int* nidx, int left, int right) 
-{ 
-    if (left < right) 
+void quickSort(double *ndist, int *nidx, int left, int right)
+{
+    if (left < right)
     {
         // select a pivotIndex between left and right
         int pivotIndex = left + rand() % (right - left + 1);
 
-        pivotIndex = partition(ndist, nidx, left, right, pivotIndex); 
-  
-        // Separately sort elements before 
-        // partition and after partition 
-        quickSort(ndist, nidx, left, pivotIndex - 1); 
-        quickSort(ndist, nidx, pivotIndex + 1, right); 
-    } 
-}
+        pivotIndex = partition(ndist, nidx, left, right, pivotIndex);
 
+        // Separately sort elements before
+        // partition and after partition
+        quickSort(ndist, nidx, left, pivotIndex - 1);
+        quickSort(ndist, nidx, pivotIndex + 1, right);
+    }
+}
 
 /**
 * Returns the k-th smallest element of list within left..right
@@ -303,7 +303,6 @@ void quickSelect(double *A, int *B, int left, int right, int k)
         return quickSelect(A, B, pivotIndex + 1, right, k);
 }
 
-
 /**
  * Function that finds the knn of a specific point 'pointNum' of Y. Called if k>=n
  * Matrix ndist is arranged in such a way that each of the first k-1 elements of the matrix is smaller than the k-th
@@ -333,19 +332,18 @@ void addElems(double *D, int m, int k, int pointNum, int *nidx, double *ndist)
 
     for (int i = 0; i < m; ++i)
     {
-        ndist[pointNum*k + elemCount] = D[i];
-        nidx[pointNum*k + elemCount] = i;
+        ndist[pointNum * k + elemCount] = D[i];
+        nidx[pointNum * k + elemCount] = i;
         elemCount++;
     }
 
     //in the remaining positions put these values so that they can be removed first when new corpus set points arrive
     for (int i = elemCount; i < k; ++i)
     {
-        ndist[pointNum*k + i] = INFINITY;
-        nidx[pointNum*k + i] = INT_MAX;
+        ndist[pointNum * k + i] = INFINITY;
+        nidx[pointNum * k + i] = INT_MAX;
     }
 }
-
 
 /**
  * Function that finds the knn of a specific point 'pointNum' of Y. Called if k<n.
@@ -382,7 +380,6 @@ void addElems2(double *A, int *B, int n, int k, int pointNum, double *ndist, int
     }
 }
 
-
 /**
 * Function that finds the knn of a specific point 'pointNum' of Y.
 * If n<k then just consider all elements of X as neighbors of the query point
@@ -408,8 +405,8 @@ void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *nd
 
     if (k >= m)
     {
-        addElems(D,m, k, pointNum, nidx, ndist);
-        quickSort(ndist, nidx, 0, m-1);
+        addElems(D, m, k, pointNum, nidx, ndist);
+        quickSort(ndist, nidx, 0, m - 1);
     }
     else
     {
@@ -449,7 +446,7 @@ void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *nd
         }
 
         //sort the elements in nondecreasing order
-        quickSort(mPointDistanceMatrix, mPointIndexMatrix,0,k-1);
+        quickSort(mPointDistanceMatrix, mPointIndexMatrix, 0, k - 1);
 
         //create the final ndist and nidx for the query point with index pointNum
         addElems2(mPointDistanceMatrix, mPointIndexMatrix, n, k, pointNum, ndist, nidx);
@@ -458,7 +455,6 @@ void kSelect(double *D, int pointNum, int n, int m, int k, int *nidx, double *nd
         free(mPointIndexMatrix);
     }
 }
-
 
 /**
  * Function that implements the knn algorithm for a given query set Y and corpus set X.
@@ -503,7 +499,7 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
 
     double *D = NULL;
 
-    //for each point of the query set Y, find the distances of the corpus set points from it and keep 
+    //for each point of the query set Y, find the distances of the corpus set points from it and keep
     //the k smallest (k nearest neighbors)
     for (int i = 0; i < m; ++i)
     {
@@ -523,7 +519,6 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k)
 
     return retVal;
 }
-
 
 /**
  * Function implementing the insertion sort algorithm.
@@ -561,7 +556,6 @@ void insertionSort(double *arr, int *indexes, int n)
         indexes[j + 1] = keyIndex;
     }
 }
-
 
 /**
  * Function that finds the k smallest elements of the two lists. Combines the two lists into one and then applies
@@ -612,7 +606,7 @@ void mergeLists(knnresult old, knnresult new, int m, int k, int offset)
         }
 
         //find the k-th smallest element of ndistComb and rearrange ndistComb and nidxComb accordingly
-        quickSelect(ndistComb, nidxComb, 0, 2 * k - 1, k-1);
+        quickSelect(ndistComb, nidxComb, 0, 2 * k - 1, k - 1);
 
         for (int j = 0; j < k; ++j)
         {
