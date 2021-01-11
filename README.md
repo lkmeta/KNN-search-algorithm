@@ -18,9 +18,15 @@
    + ```./v0 <Number of data points> <Number of dimensions> <Number of nearest neighbors> ```  
    + ```mpirun -np <Number of tasks> ./v1 <Number of data points> <Number of dimensions> <Number of nearest neighbors> ```  
    + ```mpirun -np <Number of tasks> ./v2 <Number of data points> <Number of dimensions> <Number of nearest neighbors> ```  
+   
+**Note:** Use the KNN search algorithm for one of the tested matrices with this command line:  
+ ``` mpirun -np <Number of tasks> ./v1 <path to matrix> <number of nearest neighbors> ```
 
-**Note:** We used the following Scripts in AUTh High Performance Computing (HPC) infrastructure to test our code.
-To build and run these scripts you should contain a subfolder named "matrices" which will have the tested matrices.
+### **Process for tested Matrices** 
+
+**Note:** We used the following [Scripts](https://github.com/lkmeta/KNN-search-algorithm/tree/main/bash%20scripts) in AUTh High Performance Computing (HPC) infrastructure to test our code.  
+We used different time durations for these scripts to compute the [results](https://github.com/lkmeta/KNN-search-algorithm/tree/main/results) for the tested matrices.  
+To build and run these scripts you should contain a subfolder named "matrices" which will have the tested matrices.  
 
 **Script ```parallel.sh```:**
    + calculates KNN using v1 and v2 with the matrices for the following combinations of tasks and k value
