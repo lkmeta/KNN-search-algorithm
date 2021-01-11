@@ -24,7 +24,7 @@ v0: v0.c
 v1: v1.c
 	$(MPICC) $(CFLAGS) -o v1 v1.c -lopenblas -lpthread -lm -fopenmp
 	
-v2: v2.c v2.c
+v2: v2.c
 	$(MPICC) $(CFLAGS) -o v2 v2.c -lm 
 
 .PHONY: clean
