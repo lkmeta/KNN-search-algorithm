@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-
 double *readCOL(char *filename, int *n, int *d)
 {
 
@@ -88,7 +87,7 @@ double *readFEAT(char *filename, int *n, int *d)
 
     double doubleValue;
 
-    int nCount = 1038;
+    int nCount = 106574;
     int dCount = 518;
     double *X = (double *)malloc(nCount * dCount * sizeof(double));
 
@@ -149,12 +148,11 @@ double *readMINI(char *filename, int *n, int *d)
     {
         currPos++;
         X[currPos] = doubleValue;
-        
     }
 
     fclose(stream);
 
-    printf("currPos=%d\n",currPos);
+    printf("currPos=%d\n", currPos);
 
     *n = nCount;
     *d = dCount;
@@ -202,7 +200,7 @@ double *readTV(char *filename, int *n, int *d)
     double doubleValue;
     int intValue;
 
-    fseek(stream,1,SEEK_SET);
+    fseek(stream, 1, SEEK_SET);
 
     for (int i = 0; i < nCount; i++)
     {
@@ -225,8 +223,6 @@ double *readTV(char *filename, int *n, int *d)
     }
 
     fclose(stream);
-
-    printf("counter=%d\n",counter);
 
     *n = nCount;
     *d = dCount;
