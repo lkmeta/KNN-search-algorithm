@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "knn.h"
-#include "readerAlt.c"
+#include "reader.c"
 
 int main(int argc, char *argv[])
 {
