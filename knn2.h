@@ -7,13 +7,22 @@
 #include <time.h>
 #include <string.h>
 
-#define SWAPD(x,y) { double temp = x; x = y; y = temp; }    //swap two doubles
-#define SWAPI(x,y) { int temp = x; x = y; y =temp; }        //swap two integers
+#define SWAPD(x, y)      \
+    {                    \
+        double temp = x; \
+        x = y;           \
+        y = temp;        \
+    } //swap two doubles
+#define SWAPI(x, y)   \
+    {                 \
+        int temp = x; \
+        x = y;        \
+        y = temp;     \
+    } //swap two integers
 
 typedef struct queryPoint queryPoint;
 typedef struct Node Node;
 typedef struct knnresult knnresult;
-
 
 // Definition of the query point struct
 struct queryPoint
@@ -28,19 +37,17 @@ struct queryPoint
     double tau;       //!< Radius for the searchVPT process
 };
 
-
 // Definition of the node struct
 struct Node
 {
-    Node *left;         //left child of the node
-    Node *right;        //right child of the node
-    int p;              //index of vantage point
-    double mu;          //median distance
-    double *dists;      //matrix containing the distances of the points of the node from its vantage point
-    int *indx;          //matrix containing the indexes of the points of the node
-    int numOfIndexes;   //number of points contained in the node
+    Node *left;       //left child of the node
+    Node *right;      //right child of the node
+    int p;            //index of vantage point
+    double mu;        //median distance
+    double *dists;    //matrix containing the distances of the points of the node from its vantage point
+    int *indx;        //matrix containing the indexes of the points of the node
+    int numOfIndexes; //number of points contained in the node
 };
-
 
 // Definition of the kNN result struct
 struct knnresult
@@ -50,7 +57,6 @@ struct knnresult
     int m;         //!< Number of query points                 [scalar]
     int k;         //!< Number of nearest neighbors            [scalar]
 };
-
 
 /**
  * Function printing matrix of doubles. Although it is stored as one dimensional array, actually
@@ -67,14 +73,14 @@ void printMatrix(double *A, int size, int lineSize)
 {
     for (int i = 0; i < size; ++i)
     {
-        if(i%lineSize==0 && i!=0){
+        if (i % lineSize == 0 && i != 0)
+        {
             printf("\n");
         }
         printf("%lf ", A[i]);
     }
     printf("\n");
 }
-
 
 /**
  * Function creating random doubles within a specific range.
@@ -83,14 +89,13 @@ void printMatrix(double *A, int size, int lineSize)
  * Output:
  *      the random number generated
 **/
-double randfrom(double max) 
+double randfrom(double max)
 {
     double min = -max;
-    double range = (max - min); 
+    double range = (max - min);
     double div = RAND_MAX / range;
     return min + (rand() / div);
 }
-
 
 /**
  * Function creating a matrix of doubles with random values whose range grows bigger depending on the size of the 
@@ -105,22 +110,24 @@ void createRandomMatrix(double *A, int size)
 {
     double maxVal;
 
-    if(size<1000){
+    if (size < 1000)
+    {
         maxVal = 10.0;
     }
-    else if(size<10000){
+    else if (size < 10000)
+    {
         maxVal = 100.0;
     }
-    else{
+    else
+    {
         maxVal = 200.0;
     }
-    
+
     for (int i = 0; i < size; ++i)
     {
         A[i] = randfrom(maxVal);
     }
 }
-
 
 /** 
 * Partition using Lomuto partition scheme
@@ -136,40 +143,39 @@ void createRandomMatrix(double *A, int size)
 * Output:
 *       int pIndex: index of pivot element on the rearranged matrix
 **/
-int partition(double* A, int* B, int left, int right, int pivotIndex)
+int partition(double *A, int *B, int left, int right, int pivotIndex)
 {
-     // Pick pivotIndex as pivot from the array
-     double pivot = A[pivotIndex];
- 
-     // Move pivot to end
-     SWAPD(A[pivotIndex], A[right]);
-     SWAPI(B[pivotIndex], B[right]);
- 
-     // elements less than pivot will be pushed to the left of pIndex
-     // elements more than pivot will be pushed to the right of pIndex
-     // equal elements can go either way
-     int pIndex = left;
- 
-     // each time we finds an element less than or equal to pivot, pIndex
-     // is incremented and that element would be placed before the pivot.
-     for (int i = left; i < right; i++)
-     {
-         if (A[i]-pivot<1e-6)
-         {
-             SWAPD(A[i], A[pIndex]);
-             SWAPI(B[i], B[pIndex]);
-             pIndex++;
-         }
-     }
- 
-     // Move pivot to its final place
-     SWAPD(A[pIndex], A[right]);
-     SWAPI(B[pIndex], B[right]);
- 
-     // return pIndex (index of pivot element)
-     return pIndex;
-}
+    // Pick pivotIndex as pivot from the array
+    double pivot = A[pivotIndex];
 
+    // Move pivot to end
+    SWAPD(A[pivotIndex], A[right]);
+    SWAPI(B[pivotIndex], B[right]);
+
+    // elements less than pivot will be pushed to the left of pIndex
+    // elements more than pivot will be pushed to the right of pIndex
+    // equal elements can go either way
+    int pIndex = left;
+
+    // each time we finds an element less than or equal to pivot, pIndex
+    // is incremented and that element would be placed before the pivot.
+    for (int i = left; i < right; i++)
+    {
+        if (A[i] - pivot < 1e-6)
+        {
+            SWAPD(A[i], A[pIndex]);
+            SWAPI(B[i], B[pIndex]);
+            pIndex++;
+        }
+    }
+
+    // Move pivot to its final place
+    SWAPD(A[pIndex], A[right]);
+    SWAPI(B[pIndex], B[right]);
+
+    // return pIndex (index of pivot element)
+    return pIndex;
+}
 
 /**
 * Returns the k-th smallest element of list within left..right
@@ -186,30 +192,29 @@ int partition(double* A, int* B, int left, int right, int pivotIndex)
 * Output:
 *       None
 **/
-void quickSelect(double* A, int* B, int left, int right, int k)
+void quickSelect(double *A, int *B, int left, int right, int k)
 {
     // If the array contains only one element, return that element
     if (left == right)
         return;
- 
+
     // select a pivotIndex between left and right
     int pivotIndex = left + rand() % (right - left + 1);
- 
+
     pivotIndex = partition(A, B, left, right, pivotIndex);
- 
+
     // The pivot is in its final sorted position
     if (k == pivotIndex)
         return;
- 
+
     // if k is less than the pivot index
     else if (k < pivotIndex)
         return quickSelect(A, B, left, pivotIndex - 1, k);
- 
+
     // if k is more than the pivot index
     else
         return quickSelect(A, B, pivotIndex + 1, right, k);
- }
-
+}
 
 /**
  * Function implementing the insertion sort algorithm.
@@ -250,7 +255,6 @@ void insertionSort(double *arr, int *indexes, int n)
     }
 }
 
-
 /**
  * Function checking whether a specific point has been sampled already by checking whether the index
  * of this point belongs already in the array containing the indexes of the sampled points
@@ -265,7 +269,7 @@ void insertionSort(double *arr, int *indexes, int n)
 int sampledAlready(int *sampleIndex, int sampleSize, int index)
 {
     int result = 0;
-    
+
     for (int i = 0; i < sampleSize; ++i)
     {
         //no need to check after that because these positions have not been filled yet
@@ -285,7 +289,6 @@ int sampledAlready(int *sampleIndex, int sampleSize, int index)
     return result;
 }
 
-
 /**
  * Function that creates a sample of points by choosing random points from the whole set of points.
  * Structured in such a way that all of the randomly selected points are unique.
@@ -302,8 +305,8 @@ int sampledAlready(int *sampleIndex, int sampleSize, int index)
 **/
 int *sampleSet(double *X, double *sample, int *indexes, int sampleSize, int n, int d)
 {
-    int count = 0;  //counts how mny elements have been sampled already
-    int index;      //randomly chosen index 
+    int count = 0; //counts how mny elements have been sampled already
+    int index;     //randomly chosen index
 
     int *sampleIndex = (int *)malloc(sampleSize * sizeof(int));
     if (sampleIndex == NULL)
@@ -336,7 +339,6 @@ int *sampleSet(double *X, double *sample, int *indexes, int sampleSize, int n, i
 
     return sampleIndex;
 }
-
 
 /**
  * Function that calculates median of a list.
@@ -371,7 +373,6 @@ double findMedian(double *sampleDistances, int *indexes, int sampleSize)
 
     return mu;
 }
-
 
 /**
  * Function that selects the vantage point. First we sample a number of points. Then for each one of these
@@ -433,7 +434,7 @@ int selectVP(double *X, int *indexes, int n, int d)
     double mu;
     double bestSpread = 0.0;
     double spread;
-    int bestP;      //index of the point which is more appropriate to be a vantage point
+    int bestP; //index of the point which is more appropriate to be a vantage point
 
     //for each point of the first sample set
     for (int i = 0; i < sampleSize; ++i)
@@ -450,12 +451,13 @@ int selectVP(double *X, int *indexes, int n, int d)
             {
                 sampleDistances[j] += pow(P[i * d + k] - D[j * d + k], 2);
             }
-            if(sampleDistances[j]<1e-5){
-                sampleDistances[j] =0;
+            if (sampleDistances[j] < 1e-5)
+            {
+                sampleDistances[j] = 0;
             }
             sampleDistances[j] = sqrt(sampleDistances[j]);
         }
-        
+
         mu = findMedian(sampleDistances, sampleIndex2, sampleSize);
         free(sampleIndex2);
 
@@ -467,7 +469,7 @@ int selectVP(double *X, int *indexes, int n, int d)
             spread += pow(sampleDistances[j] - mu, 2);
         }
         spread /= sampleSize;
-        
+
         //keep the point with the biggest spread value so far
         if (spread > bestSpread)
         {
@@ -483,7 +485,6 @@ int selectVP(double *X, int *indexes, int n, int d)
 
     return bestP;
 }
-
 
 /**
  * Function that finds the index of the vantage points on the subset of points used to create a specific subtree
@@ -514,7 +515,6 @@ int findVPIndx(int vp, int *indexes, int n)
     return VPindex;
 }
 
-
 /**
  * Function that creates the vantage point tree. First, the function checks whether it has to create a leaf or a
  * non-leaf node. If the node created is a leaf, we simply add all the given points to the leaf and set the index
@@ -537,7 +537,7 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
 {
     Node *nd;
 
-    if (n==0)
+    if (n == 0)
     {
         nd = NULL;
         return nd;
@@ -563,7 +563,7 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             printf("Error in makeVPT: Couldn't allocate memory for nd->dists");
             exit(-1);
         }
-        
+
         nd->indx = (int *)malloc(n * sizeof(int));
         if (nd->indx == NULL)
         {
@@ -601,7 +601,8 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             {
                 nd->dists[i] += pow(S[i * d + j] - S[pInd * d + j], 2);
             }
-            if(nd->dists[i]<1e-5){
+            if (nd->dists[i] < 1e-5)
+            {
                 nd->dists[i] = 0;
             }
             nd->dists[i] = sqrt(nd->dists[i]);
@@ -634,14 +635,14 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
 
         free(distsTemp);
 
-        double *right;      //coordinates of the points that will go to the right child
-        int *rightIndexes;  //indexes of the points that will go to the right child
-        
-        double *left;       //coordinates of the points that will go to the left child
-        int *leftIndexes;   //indexes of the points that will go to the left child
+        double *right;     //coordinates of the points that will go to the right child
+        int *rightIndexes; //indexes of the points that will go to the right child
 
-        int lSize = 0;      //number of points going to the left child
-        int rSize = 0;      //number of points going to the right child
+        double *left;     //coordinates of the points that will go to the left child
+        int *leftIndexes; //indexes of the points that will go to the left child
+
+        int lSize = 0; //number of points going to the left child
+        int rSize = 0; //number of points going to the right child
 
         //check how many points are closer to the vp than the median or farther from it
         for (int i = 0; i < n; ++i)
@@ -693,8 +694,8 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
             exit(-1);
         }
 
-        int lCounter = 0;   //counts how many elements have been added to the left child
-        int rCounter = 0;   //counts how many elements have been added to the right child
+        int lCounter = 0; //counts how many elements have been added to the left child
+        int rCounter = 0; //counts how many elements have been added to the right child
 
         //separate elements going to the left or the right child
         for (int i = 0; i < n; ++i)
@@ -753,7 +754,6 @@ Node *makeVPT(double *S, int n, int d, int *indexes, int B)
     return nd;
 }
 
-
 /**
  * Function that adds the neighbors from the node into the query point.
  * First, we add all the neighbors from current node into the query point.
@@ -797,9 +797,10 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
             currentP->ndist[i + currentP->numOfIndexes] = 0;
             for (int j = 0; j < currentP->d; ++j)
             {
-                currentP->ndist[i + currentP->numOfIndexes] += pow(S[currentP->d * currentNode->p -offset + j] - currentP->coord[j], 2);
+                currentP->ndist[i + currentP->numOfIndexes] += pow(S[currentP->d * currentNode->p - offset + j] - currentP->coord[j], 2);
             }
-            if(currentP->ndist[i + currentP->numOfIndexes]<1e-5){
+            if (currentP->ndist[i + currentP->numOfIndexes] < 1e-5)
+            {
                 currentP->ndist[i + currentP->numOfIndexes] = 0;
             }
             currentP->ndist[i + currentP->numOfIndexes] = sqrt(currentP->ndist[i + currentP->numOfIndexes]);
@@ -817,7 +818,8 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
             {
                 currentP->ndist[i + currentP->numOfIndexes] += pow(S[currentP->d * currentNode->indx[i] - offset + j] - currentP->coord[j], 2);
             }
-            if(currentP->ndist[i + currentP->numOfIndexes]<1e-5){
+            if (currentP->ndist[i + currentP->numOfIndexes] < 1e-5)
+            {
                 currentP->ndist[i + currentP->numOfIndexes] = 0;
             }
             currentP->ndist[i + currentP->numOfIndexes] = sqrt(currentP->ndist[i + currentP->numOfIndexes]);
@@ -851,7 +853,6 @@ void addElements(Node *currentNode, queryPoint *currentP, double *S, int offset)
     {
         currentP->tau = currentP->ndist[currentP->numOfIndexes - 1];
     }
-
 }
 
 /**
@@ -907,9 +908,10 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
         {
             tempDist += pow(S[queryP->d * root->p - offset + i] - queryP->coord[i], 2);
         }
-        if(tempDist<1e-5){
-                tempDist = 0;
-            }
+        if (tempDist < 1e-5)
+        {
+            tempDist = 0;
+        }
         tempDist = sqrt(tempDist);
 
         //if the vantage point is inside the tau radius consider it as a neighbor
@@ -948,7 +950,6 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
     return;
 }
 
-
 /**
  * Function that implements the knn algorithm for a given query set Y and corpus set X.
  * For each point in Y we create its queryPoint struct and then we search in the VPT for its k nearest neighbors
@@ -965,9 +966,9 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
  * Output:
  *      knnresult retVal: structure containing the info about the knn of each point of Y
 **/
-knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int offset)
+knnresult kNN(double *X, double *Y, Node *root, int n, int m, int d, int k, int offset)
 {
-    
+
     int *nidx = (int *)malloc(m * k * sizeof(int));
 
     if (nidx == NULL)
@@ -984,13 +985,13 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
         exit(-1);
     }
 
-    queryPoint *p = (queryPoint*)malloc(sizeof(queryPoint));
+    queryPoint *p = (queryPoint *)malloc(sizeof(queryPoint));
     if (p == NULL)
     {
         printf("failed to allocate memory for query point\n");
         exit(-1);
     }
-    
+
     double *tempCoord = (double *)malloc(d * sizeof(double));
     if (tempCoord == NULL)
     {
@@ -1009,7 +1010,7 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
 
         for (int i = 0; i < d; i++)
         {
-            tempCoord[i] = Y[j*d + i];
+            tempCoord[i] = Y[j * d + i];
         }
 
         p->coord = tempCoord;
@@ -1022,14 +1023,13 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
 
         for (int i = 0; i < p->numOfIndexes; i++)
         {
-            nidx[j*k+i] = p->nidx[i];
+            nidx[j * k + i] = p->nidx[i];
         }
 
         for (int i = 0; i < p->numOfIndexes; i++)
         {
-            ndist[j*k+i] = p->ndist[i];
+            ndist[j * k + i] = p->ndist[i];
         }
-
     }
 
     free(p->nidx);
@@ -1064,7 +1064,7 @@ knnresult kNN(double *X, double *Y, Node* root, int n, int m, int d, int k, int 
  * Output:
  *      None
 **/
-void mergeLists(double* ndistOld,int* nidxOld, double* ndistNew, int* nidxNew, int m, int k, int offset)
+void mergeLists(double *ndistOld, int *nidxOld, double *ndistNew, int *nidxNew, int m, int k, int offset)
 {
 
     //array containing the elements of both old.ndist and new.ndist arrays combined for a particular query point each time
@@ -1119,19 +1119,23 @@ void mergeLists(double* ndistOld,int* nidxOld, double* ndistNew, int* nidxNew, i
  * Output:
  *      None
 **/
-void freeNode(Node* node){
-    
+void freeNode(Node *node)
+{
+
     //if it is not a leaf
-    if(node->numOfIndexes==1){
+    if (node->numOfIndexes == 1)
+    {
 
         //free its left child
-        if(node->left!=NULL){
+        if (node->left != NULL)
+        {
             freeNode(node->left);
             free(node->left);
         }
 
         //free its right child
-        if(node->right != NULL){
+        if (node->right != NULL)
+        {
             freeNode(node->right);
             free(node->right);
         }
@@ -1141,13 +1145,13 @@ void freeNode(Node* node){
     }
 
     //if it is not a leaf
-    if((node->left == NULL) && (node->right == NULL)){
+    if ((node->left == NULL) && (node->right == NULL))
+    {
         free(node->dists);
         free(node->indx);
     }
 
     return;
 }
-
 
 #endif
