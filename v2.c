@@ -43,7 +43,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     int originRank;    //the process' rank for which the particular set of points is considered the local points set
     int originSize;    //the number of elements of this set of points (not all processes have the same number of local points)
     Node *root = NULL; //the root of the VPT for each process
-    int B = 4;         //na to dw auto
+    int B = 4;         //minimum number of points in each leaf of the VPT
 
     int *indexes = NULL; //array containing the indexes the local points have in the array that contains all the points
 
@@ -590,10 +590,11 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     return result;
 }
 
+
 //Main has either 2 or 3 command line arguments
-//Case of 3: The points are read from a file
+//Case of 2: The points are read from a file
 //Argument 1: the filename, Argument 2: value of k
-//Case of 4: The points are created randomly
+//Case of 3: The points are created randomly
 //Argument 1: value of n, Argument 2: value of d, Argument 3: value of k
 int main(int argc, char *argv[])
 {
