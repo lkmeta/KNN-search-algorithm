@@ -19,7 +19,7 @@ default: all
 all: $(EXECUTABLES)
 
 v0: v0.c
-	$(CC) $< -o $@ -lopenblas -lpthread -lm -fopenmp
+	$(CC) $< -o $@ -lopenblas -lpthread -lm
 
 v1: v1.c
 	$(MPICC) $(CFLAGS) -o v1 v1.c -lpthread -lm -lopenblas
