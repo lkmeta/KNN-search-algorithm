@@ -21,7 +21,7 @@ If you want to run a function with a matrix of random values run as shown below:
    + ```mpirun -np <Number of tasks> ./v1 <Number of data points> <Number of dimensions> <Number of nearest neighbors> ```  
    + ```mpirun -np <Number of tasks> ./v2 <Number of data points> <Number of dimensions> <Number of nearest neighbors> ```  
 If you want to run a function with one of the given matrices run as shown below:
-``` mpirun -np <Number of tasks> ./v1 <path to matrix> <number of nearest neighbors> ```
+   + ``` mpirun -np <Number of tasks> ./v1 <path to matrix> <number of nearest neighbors> ```
    
 **Note:** When running the functions with one of the given matrices it is important to not have changed the name of the matrix previously, since the reader can only
 recognize the original names.
