@@ -8,7 +8,8 @@
 
 /**
  * Function that checks if the results are correct and prints an according message. If the result is wrong
- * we get an error exit code. It is based on the tester functions given by the professors.
+ * we get an error exit code. It is based on the tester functions given by the professors. This tester is used
+ * to check the v0 and v1 implementations.
  * Input:
  *      knnresult result: the knn structure created by the method applied to our data
  *      double* corpus: matrix containing the corpus set points
