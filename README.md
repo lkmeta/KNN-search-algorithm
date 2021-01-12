@@ -4,8 +4,13 @@
 ## Tsoumplekas Georgios | gktsoump@ece.auth.gr  <br />
 ## Meta Louis-Kosmas    | louismeta@ece.auth.gr <br />
 
-
-
+---
+### Contents
+   1. [How to build](#1)
+   2. [Results from HPC](#2)
+   3. [Graphs](#3)
+   
+<a name="1"></a>
 ### **How to build**  
 
 **File ```Makefile```:**  
@@ -29,7 +34,9 @@ If you want to run a function with one of the given matrices run as shown below:
 **Note:** When running the functions with one of the given matrices it is important to not have changed the name of the matrix previously, since the reader can only
 recognize the original names.
 
-### **Process for tested Matrices** 
+
+<a name="2"></a>
+### **Results from HPC** 
 
 **Note:** We used the following [Scripts](https://github.com/lkmeta/KNN-search-algorithm/tree/main/bash%20scripts) in AUTh High Performance Computing (HPC) infrastructure to test our code.  
 We used different time durations for these scripts to compute the [results](https://github.com/lkmeta/KNN-search-algorithm/tree/main/results) for the tested matrices.  
@@ -47,6 +54,12 @@ To build and run these scripts you should contain a subfolder named "matrices" w
    + creates the directory results and outputs for v0 file
 
 
-
+**_Code Validation_**  
+The sequential code for the KNN search algorithm we used has been validated succesfully from automated tester on e-learning.  
+Furthermore, we can integrate the tester from e-learning in our code by using the functions in [test](https://github.com/lkmeta/KNN-search-algorithm/tree/main/test) subfolder.
+ 
+---
+<a name="3"></a>
+### **Graphs** 
 
 
