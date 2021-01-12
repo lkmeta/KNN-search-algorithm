@@ -420,9 +420,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 }
 
 //Main has either 2 or 3 command line arguments
-//Case of 3: The points are read from a file
+//Case of 2: The points are read from a file
 //Argument 1: the filename, Argument 2: value of k
-//Case of 4: The points are created randomly
+//Case of 3: The points are created randomly
 //Argument 1: value of n, Argument 2: value of d, Argument 3: value of k
 int main(int argc, char *argv[])
 {
