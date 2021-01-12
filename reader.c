@@ -113,31 +113,28 @@ double *readFEAT(char *filename, int *n, int *d)
 
     int nCount = 106574;
     int dCount = 518;
+
     double *X = (double *)malloc(nCount * dCount * sizeof(double));
 
     int currPos = -1;
 
     //skip the first 4 lines
-    char *line = (char *)malloc(1024 * 1024);
-    for (int skip = 0; skip < 4; skip++)
-    {
-        int got = fscanf(stream, "%s\n", line);
+    for(int skip=0;skip<4;skip++){
+		fscanf(stream,"%*[^\n]\n");
     }
-    free(line);
 
     //store the values in X matrix
-    while (fscanf(stream, "%lf ", &doubleValue) == 1)
-    {
-        if (floorf(doubleValue) == ceilf(doubleValue) && floorf(doubleValue) != 0)
-        {
-            continue;
-        }
-        else
-        {
-            currPos++;
-            X[currPos] = doubleValue;
-        }
-    }
+    for(int i=0; i<nCount; i++){
+			fscanf(stream,"%lf",&doubleValue);
+			for(int j=0; j<dCount; j++){
+				if(fscanf(stream,",%lf",&doubleValue)==EOF) break;
+                currPos++;
+				X[currPos]=doubleValue;
+        	}
+			fscanf(stream,"%*[^\n]\n");
+		}
+
+    printf("currPos=%d\n",currPos);
 
     fclose(stream);
 
