@@ -11,13 +11,13 @@
         double temp = x; \
         x = y;           \
         y = temp;        \
-    } //swap two integers
+    } //swap two doubles
 #define SWAPI(x, y)   \
     {                 \
         int temp = x; \
         x = y;        \
         y = temp;     \
-    } //swap two doubles
+    } //swap two integers
 
 // Definition of the kNN result struct
 typedef struct knnresult
