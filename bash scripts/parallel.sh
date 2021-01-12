@@ -37,7 +37,7 @@ for file in ./matrices/*; do
 	echo "" >> ./results/v2.txt
 	echo "Running v2 for matrix: "$file >> ./results/v2.txt
 	for i in 2 4 8 16 20; do
-		for k in 2 10 20 50 100; do
+		for k in 5 10 20 50 100; do
 			echo "-------------------" >> ./results/v2.txt
 			srun -n $i ./v2 $file $k >> ./results/v2.txt
 		done
