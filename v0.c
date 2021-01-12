@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
             X = readCOL(s, &n, &d);
         }
 
-        else if (strstr(s, "Features") != NULL)
+        else if (strstr(s, "features") != NULL)
         {
             printf("Your argument matrix is %s file\n", s);
             X = readFEAT(s, &n, &d);
