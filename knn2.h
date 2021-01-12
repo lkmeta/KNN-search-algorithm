@@ -877,8 +877,7 @@ void searchVPT(Node *root, queryPoint *queryP, double *S, int offset)
 
     if (root == NULL)
     {
-        printf("Error in searchVPT: Root is NULL.");
-        exit(-1);
+        return;
     }
 
     if (queryP == NULL)
