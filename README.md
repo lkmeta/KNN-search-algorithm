@@ -70,11 +70,27 @@ For every tested matrix we have 8 graphs:
    + v2 acceleration depending on number of processes value for each k
    + v2 for 2 and 20 processes depending on k value
    + v1 and v2 execution time depending on number of processes
+   
+_We calculated acceleration for v1 and v2 functions to show the change of the execution velocity of the matrix with respect to time._
 
-You can find [here](https://github.com/lkmeta/KNN-search-algorithm/tree/main/diagrams) all the graphs as we described before.
+### You can find [here](https://github.com/lkmeta/KNN-search-algorithm/tree/main/diagrams) all the graphs as we described before.
 
 Note: We faced some problems with 2 matrices when we tried to read and test them with the Scripts.
 Moreover, we couldn't get the needed data to create the graphs for "features.csv" matrix.
-Also, for "BBC.txt" we couldn't run some of the combinations with v1 function.
+Also, for "BBC.txt" we couldn't run some of the combinations with v1 function. 
 
+Some graphs:
 
+![CNN_V1_execution](https://github.com/lkmeta/KNN-search-algorithm/blob/main/diagrams/CNN/2.png)  
+---
+
+![Layout_V2_execution](https://github.com/lkmeta/KNN-search-algorithm/blob/main/diagrams/LayoutHistogram/5.png)  
+---
+
+![Moments_V1_acelleration](https://github.com/lkmeta/KNN-search-algorithm/blob/main/diagrams/ColorMoments/3.png)  
+---
+
+![Mini_V1_V2_execution](https://github.com/lkmeta/KNN-search-algorithm/blob/main/diagrams/MiniBooNE_PID/8.png)  
+---
+
+Parallel and distributed versions from this exercise proved how important is to solve complex problems in this way and get results in more efficient execution time than the sequential version.
