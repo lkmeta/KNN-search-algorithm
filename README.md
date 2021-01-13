@@ -55,8 +55,7 @@ To build and run these scripts you should contain a subfolder named "matrices" w
 
 
 **_Code Validation_**  
-The sequential code for the KNN search algorithm we used has been validated succesfully from automated tester on e-learning.  
-Furthermore, we can integrate the tester from e-learning in our code by using the functions in [test](https://github.com/lkmeta/KNN-search-algorithm/tree/main/test) subfolder.
+The sequential code for the KNN search algorithm we used has been validated succesfully from automated tester on e-learning.Furthermore, we can integrate the tester from e-learning in our code by using the functions in [test](https://github.com/lkmeta/KNN-search-algorithm/tree/main/test) subfolder.
  
 ---
 <a name="3"></a>
@@ -75,6 +74,7 @@ For every tested matrix we have 8 graphs:
 You can find [here](https://github.com/lkmeta/KNN-search-algorithm/tree/main/diagrams) all the graphs as we described before.
 
 Note: We faced some problems with 2 matrices when we tried to read and test them with the Scripts.
-Specially, for "features.csv" matrix we couldn't get the needed data for the graphs. 
-Also, for "BBC.txt" we couldn't run some of the combinations we wanted to test.
+Moreover, we couldn't get the needed data to create the graphs for "features.csv" matrix.
+Also, for "BBC.txt" we couldn't run some of the combinations with v1 function.
+
 
