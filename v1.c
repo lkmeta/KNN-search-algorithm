@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "mpi.h"
-#include "test/tester.c"
+#include "knn.h"
 #include "readerAlt.c"
 
 // Compute distributed all-kNN of points in X
@@ -49,7 +49,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
     double *finalDistances; //array containing the distances between every point of X and its k-NNs
 
     //the struct containing the kNNs of all points will only be at the root process
-    if(rank==0){
+    if (rank == 0)
+    {
         finalIndexes = (int *)malloc(n * k * sizeof(int));
         if (finalIndexes == NULL)
         {
@@ -69,7 +70,6 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         finalIndexes = NULL;
         finalDistances = NULL;
     }
-    
 
     //define the 'neighbors' of each process in the communication ring
     int prev = rank - 1;
@@ -202,12 +202,12 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
             originRank = (numtasks + stats[1].MPI_SOURCE - i) % numtasks;
 
             mergeLists(result, newResult, n / numtasks, k, offsets[originRank] / d);
-
         }
 
         //for each point in the local set of points, sort its neighbors based on their distance from it
-        for(int i=0;i<n/numtasks;++i){
-            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        for (int i = 0; i < n / numtasks; ++i)
+        {
+            insertionSort(result.ndist + i * k, result.nidx + i * k, k);
         }
 
         free(newResult.ndist);
@@ -283,8 +283,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         }
 
         //for each point in the local set of points, sort its neighbors based on their distance from it
-        for(int i=0;i<n/numtasks;++i){
-            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        for (int i = 0; i < n / numtasks; ++i)
+        {
+            insertionSort(result.ndist + i * k, result.nidx + i * k, k);
         }
         free(newResult.ndist);
         free(newResult.nidx);
@@ -359,8 +360,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         }
 
         //for each point in the local set of points, sort its neighbors based on their distance from it
-        for(int i=0;i<n/numtasks+1;++i){
-            insertionSort(result.ndist + i*k, result.nidx + i*k, k);
+        for (int i = 0; i < n / numtasks + 1; ++i)
+        {
+            insertionSort(result.ndist + i * k, result.nidx + i * k, k);
         }
         free(newResult.ndist);
         free(newResult.nidx);
@@ -407,7 +409,6 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
         //now the knn struct in the root process contains the kNNs of all elements of X
         result.nidx = finalIndexes;
         result.ndist = finalDistances;
-
     }
 
     free(Y);
@@ -419,14 +420,14 @@ knnresult distrAllkNN(double *X, int n, int d, int k)
 }
 
 //Main has either 2 or 3 command line arguments
-//Case of 3: The points are read from a file
+//Case of 2: The points are read from a file
 //Argument 1: the filename, Argument 2: value of k
-//Case of 4: The points are created randomly
+//Case of 3: The points are created randomly
 //Argument 1: value of n, Argument 2: value of d, Argument 3: value of k
 int main(int argc, char *argv[])
 {
-    int n,d,k;
-    
+    int n, d, k;
+
     double *X = NULL;
 
     knnresult processResult;
@@ -445,13 +446,15 @@ int main(int argc, char *argv[])
     //only the root process reads the whole X matrix and then scatters it to all processes
     if (rank == 0)
     {
-        if(argc<3){
+        if (argc < 3)
+        {
             printf("Not enough command line arguments\n");
             exit(-1);
         }
 
-        else if(argc==3){
-            
+        else if (argc == 3)
+        {
+
             char *s = argv[1];
             uint nameLength = strlen(s); //length of the name of the file
 
@@ -461,7 +464,7 @@ int main(int argc, char *argv[])
                 X = readCOL(s, &n, &d);
             }
 
-            else if (strstr(s, "Features") != NULL)
+            else if (strstr(s, "features") != NULL)
             {
                 printf("Your argument matrix is %s file\n", s);
                 X = readFEAT(s, &n, &d);
@@ -479,45 +482,49 @@ int main(int argc, char *argv[])
                 X = readTV(s, &n, &d);
             }
 
-            else{
-                printf("Not a .asc file!\n");
+            else
+            {
+                printf("Cannot read this file!\n");
                 exit(-1);
             }
         }
 
-        else if(argc==4){
+        else if (argc == 4)
+        {
 
             n = atoi(argv[1]);
             d = atoi(argv[2]);
             k = atoi(argv[3]);
 
-            X = (double*)malloc(n*d*sizeof(double));
+            X = (double *)malloc(n * d * sizeof(double));
             if (X == NULL)
             {
                 printf("Error in main: Couldn't allocate memory for X");
                 exit(-1);
             }
 
-            createRandomMatrix(X,n*d);
+            createRandomMatrix(X, n * d);
         }
 
-        else{
+        else
+        {
             printf("Too many command line arguments\n");
             exit(-1);
         }
-
     }
 
-    if(argc==3){
+    if (argc == 3)
+    {
 
         //send n,d to each process
-        MPI_Bcast(&n,1,MPI_INT,0,MPI_COMM_WORLD);
-        MPI_Bcast(&d,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&d, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
         //define k
-        k=atoi(argv[2]);
+        k = atoi(argv[2]);
     }
-    else if(argc==4){
+    else if (argc == 4)
+    {
 
         //define n,d,k
         n = atoi(argv[1]);
@@ -525,8 +532,6 @@ int main(int argc, char *argv[])
         k = atoi(argv[3]);
     }
 
-    printf("argc=%d, n=%d, d=%d, k=%d\n",argc,n,d,k);
-    
     //Start timer
     struct timespec init;
     clock_gettime(CLOCK_MONOTONIC, &init);
@@ -534,26 +539,27 @@ int main(int argc, char *argv[])
     processResult = distrAllkNN(X, n, d, k);
 
     //End timer
-    struct timespec last;   
+    struct timespec last;
     clock_gettime(CLOCK_MONOTONIC, &last);
 
     long ns;
     uint seconds;
-    if(last.tv_nsec <init.tv_nsec){
-        ns=init.tv_nsec - last.tv_nsec;
-        seconds= last.tv_sec - init.tv_sec -1;
+    if (last.tv_nsec < init.tv_nsec)
+    {
+        ns = init.tv_nsec - last.tv_nsec;
+        seconds = last.tv_sec - init.tv_sec - 1;
     }
 
-    if(last.tv_nsec >init.tv_nsec){
-        ns= last.tv_nsec -init.tv_nsec ;
-        seconds= last.tv_sec - init.tv_sec ;
+    if (last.tv_nsec > init.tv_nsec)
+    {
+        ns = last.tv_nsec - init.tv_nsec;
+        seconds = last.tv_sec - init.tv_sec;
     }
 
-    if(rank==0){
-
+    if (rank == 0)
+    {
         printf("argc=%d, n = %d, d = %d, k = %d, numoftasks = %d\n", argc, n, d, k, numtasks);
         printf("For V1 the seconds elapsed are %u and the nanoseconds are %ld\n", seconds, ns);
-        
         free(X);
     }
 
