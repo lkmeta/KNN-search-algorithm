@@ -34,7 +34,7 @@ If you want to run a function with one of the given matrices run as shown below:
 **Note:** When running the functions with one of the given matrices it is important to not have changed the name of the matrix previously, since the reader can only
 recognize the original names.
 
-
+---
 <a name="2"></a>
 ### **Results from HPC** 
 
