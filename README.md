@@ -45,12 +45,12 @@ To build and run these scripts you should contain a subfolder named "matrices" w
 **Script [```parallel.sh```](https://github.com/lkmeta/KNN-search-algorithm/blob/main/bash%20scripts/parallel.sh):**
    + calculates KNN using v1 and v2 with the matrices for the following combinations of tasks and k value
    + number of tasks: 2 4 8 16 20 
-   + number of nearest neighbors: 5 10 20 50 100
+   + number of nearest neighbors: 10 20 50 100
    + creates the directory results and outputs for v1 and v2 files
 
 **Script [```sequential.sh```](https://github.com/lkmeta/KNN-search-algorithm/blob/main/bash%20scripts/sequential.sh):**
    + calculates KNN using v0 with the matrices for the following combinations of k value
-   + number of nearest neighbors: 5 10 20 50 100
+   + number of nearest neighbors: 10 20 50 100
    + creates the directory results and outputs for v0 file
 
 
@@ -61,5 +61,20 @@ Furthermore, we can integrate the tester from e-learning in our code by using th
 ---
 <a name="3"></a>
 ### **Graphs** 
+We used all the data we created from AUTh High Performance Computing (HPC) infrastructure as we mentioned with this [Matlab Script]() to build the Graphs.
+For every tested matrix we have 8 graphs:
+   + v0 execution time depending on k value
+   + v1 execution time depending on number of processes value for each k
+   + v1 acceleration depending on number of processes value for each k
+   + v1 for 2 and 20 processes depending on k value
+   + v2 execution time depending on number of processes value for each k
+   + v2 acceleration depending on number of processes value for each k
+   + v2 for 2 and 20 processes depending on k value
+   + v1 and v2 execution time depending on number of processes
 
+You can find [here](https://github.com/lkmeta/KNN-search-algorithm/tree/main/diagrams) all the graphs as we described before.
+
+Note: We faced some problems with 2 matrices when we tried to read and test them with the Scripts.
+Specially, for "features.csv" matrix we couldn't get the needed data for the graphs. 
+Also, for "BBC.txt" we couldn't run some of the combinations we wanted to test.
 
