@@ -60,7 +60,7 @@ The sequential code for the KNN search algorithm we used has been validated succ
 ---
 <a name="3"></a>
 ### **Graphs** 
-We used all the data we created from AUTh High Performance Computing (HPC) infrastructure as we mentioned with this [Matlab Script]() to build the Graphs.
+We used all the data we created from AUTh High Performance Computing (HPC) infrastructure as we mentioned with this [Matlab Script](https://github.com/lkmeta/KNN-search-algorithm/blob/main/results/createPlots.m) to build the Graphs.
 For every tested matrix we have 8 graphs:
    + v0 execution time depending on k value
    + v1 execution time depending on number of processes value for each k
